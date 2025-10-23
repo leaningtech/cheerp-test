@@ -1,8 +1,8 @@
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
+// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js
+// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js
 // RUN: %node %t_asmjs.js 2>&1 | %FileCheck %s
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm %s -o %t_wasm.js
+// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm %s -o %t_wasm.js
 // RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
 // CHECK: New on class types 1/2 : SUCCESS
 // CHECK: Nothrow new on class types 2/2 : SUCCESS

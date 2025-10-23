@@ -1,0 +1,282 @@
+-- Testing: 12 tests, 8 workers --
+PASS: Cheerp :: unit/memory/test8.cpp (1 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test8.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test8.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/test3.cpp (2 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp.js
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test3.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test3.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/arraynew.cpp (3 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/arraynew.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/arraynew.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/test4.cpp (4 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test4.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test4.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/test5.cpp (5 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test5.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test5.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/test7.cpp (6 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp.js
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test7.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test7.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/test6.cpp (7 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test6.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test6.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/kinds.cpp (8 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/kinds.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/kinds.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/kinds.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/kinds.cpp.tmp.js
+/home/alex/cheerp/cheerp-test/unit/memory/kinds.cpp:26:8: warning: Cheerp: Unions are less efficient than on native targets [-Wcheerp-maybe-slow]
+        union u
+              ^
+1 warning generated.
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/kinds.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/kinds.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/kinds.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/kinds.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/typedarrays_operator.cpp (9 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/typedarrays_operator.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/typedarrays_operator.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/typedarrays_operator.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/typedarrays_operator.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/typedarrays_operator.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/typedarrays_operator.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/typedarrays_operator.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/typedarrays_operator.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/multiarray.cpp (10 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/multiarray.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/multiarray.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/test1.cpp (11 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp.js
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test1.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test1.cpp
+
+--
+
+********************
+PASS: Cheerp :: unit/memory/test2.cpp (12 of 12)
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 1: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp.js
+/home/alex/cheerp/cheerp-test/unit/memory/test2.cpp:36:7: warning: Cheerp: Unions are less efficient than on native targets [-Wcheerp-maybe-slow]
+union BL
+      ^
+1 warning generated.
+RUN: at line 2: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp
+RUN: at line 3: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp_asmjs.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm -cheerp-linear-output=asmjs /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp_asmjs.js
+RUN: at line 4: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp_asmjs.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp_asmjs.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp
+RUN: at line 5: /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp_wasm.js
++ /opt/cheerp/bin/clang++ -O2 -cheerp-bounds-check -O1 -frtti -I/home/alex/cheerp/cheerp-test/unit/memory/.. -target cheerp-wasm /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp -o /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp_wasm.js
+RUN: at line 6: node /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp_wasm.js 2>&1 | /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp
++ node /home/alex/cheerp/cheerp-test/unit/memory/Output/test2.cpp.tmp_wasm.js
++ /home/alex/llvm-lit-exploration/llvm_venv/bin/FileCheck /home/alex/cheerp/cheerp-test/unit/memory/test2.cpp
+
+--
+
+********************
+
+Testing Time: 30.27s
+
+Total Discovered Tests: 12
+  Passed: 12 (100.00%)

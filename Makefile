@@ -1,6 +1,9 @@
-# Makefile for Cheerp Unit Tests
-
 CHEERP_CLANG = /opt/cheerp/bin/clang++
+CHEERP_FLAGS ?= -O2
+EXTRA_FLAGS ?= 
+export CHEERP_FLAGS
+export EXTRA_FLAGS
+
 UNIT_TEST_SOURCES := $(shell find unit -name "*.cpp" -type f 2>/dev/null | wc -l)
 EXPERIMENTAL_SOURCES := $(wildcard experimental/*.cpp)
 JOBS ?= $(shell nproc 2>/dev/null || echo 4)
@@ -16,14 +19,10 @@ UNIT_TARGETS = $(addprefix lit-,$(UNIT_DIRS))
 .PHONY: all test clean lit-unit lit-unit-parallel lit-unit-seq lit-smoke lit-preexecutable lit-common lit-genericjs lit-asmjs lit-wasm-only lit-experimental $(UNIT_TARGETS)
 
 # Default target - run smoke tests (quick sanity check)
-# Note: Currently only smoke, memory, and experimental tests are fully working
 all: lit-smoke
 
 # Alias for default
 test: all
-
-# Quick test suite (smoke + experimental)
-quick: lit-smoke lit-experimental
 
 # Run experimental tests (formerly test_sources/)
 lit-experimental:
@@ -274,17 +273,22 @@ help:
 	@echo "  Note: Only lit-memory is known to work currently"
 	@echo ""
 	@echo "Variables:"
-	@echo "  JOBS=N            - Set number of parallel jobs (current: $(JOBS))"
-	@echo "  LIT=<path>        - Set lit executable path (current: $(LIT))"
-	@echo "  NODE=<path>       - Set node executable path (current: $(NODE))"
+	@echo "  JOBS=N              - Set number of parallel jobs (current: $(JOBS))"
+	@echo "  LIT=<path>          - Set lit executable path (current: $(LIT))"
+	@echo "  NODE=<path>         - Set node executable path (current: $(NODE))"
+	@echo "  CHEERP_FLAGS='...'  - Add compiler flags to all tests (current: $(CHEERP_FLAGS))"
+	@echo "  EXTRA_FLAGS='...'   - Add extra compiler flags to all tests"
 	@echo ""
 	@echo "Test Statistics:"
 	@echo "  unit/             - $(UNIT_TEST_SOURCES) test files"
 	@echo "  experimental/     - $(words $(EXPERIMENTAL_SOURCES)) test files"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make              - Run smoke tests (default)"
-	@echo "  make quick        - Run smoke + experimental tests"
-	@echo "  make lit-memory   - Run memory tests"
-	@echo "  make lit-experimental - Run experimental tests"
-	@echo "  make JOBS=8       - Run with 8 parallel jobs"
+	@echo "  make                                    - Run smoke tests (default)"
+	@echo "  make quick                              - Run smoke + experimental tests"
+	@echo "  make lit-memory                         - Run memory tests"
+	@echo "  make lit-experimental                   - Run experimental tests"
+	@echo "  make JOBS=8                             - Run with 8 parallel jobs"
+	@echo "  make lit-memory CHEERP_FLAGS='-g -O0'   - Run with debug flags"
+	@echo "  make EXTRA_FLAGS='-DDEBUG'              - Run with extra preprocessor flags"
+	@echo "  make CHEERP_FLAGS='-cheerp-bounds-check' - Add bounds checking"

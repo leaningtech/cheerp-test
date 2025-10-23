@@ -11,6 +11,13 @@ This directory contains the test suite for the Cheerp compiler. The tests use LL
 
 Other test categories are available but may have issues. We recommend starting with the working tests above.
 
+## next dev steps
+
+ - expand test functionality to all unit test subdirectories
+ - allow for flexible use of compilation flags
+ - increase general flexibility and functionality of the testing platform 
+
+
 ## Prerequisites
 
 ### Required Software
