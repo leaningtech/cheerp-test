@@ -1,0 +1,31 @@
+// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
+// RUN: %node %t.js 2>&1 | %FileCheck %s
+// CHECK: Creating client object that do not have a constructor : SUCCESS
+// CHECK: Creating template array wrapper type : SUCCESS
+
+//===---------------------------------------------------------------------===//
+//	Copyright 2016 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+#include <tests.h>
+#include <cheerp/client.h>
+#include <cheerp/types.h>
+
+namespace client
+{
+	class FakeClientObj: public Object
+	{
+	public:
+		void set_val(int);
+		int get_val();
+	};
+}
+
+void webMain()
+{
+	client::FakeClientObj* o = new client::FakeClientObj();
+	o->set_val(42);
+	assertEqual(o->get_val(), 42, "Creating client object that do not have a constructor");
+	client::TArray<client::String*>* ta = new client::TArray<client::String*>();
+	assertEqual(ta->get_length(), 0, "Creating template array wrapper type");
+}

@@ -1,0 +1,4 @@
+C++ implicit operator=() 1/4 : FAILURE
+C++ implicit operator=() 2/4 : SUCCESS
+C++ implicit operator=() 3/4 : SUCCESS
+C++ implicit operator=() 4/4 : SUCCESS

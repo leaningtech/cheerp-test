@@ -1,0 +1,7 @@
+Memmove, (native types) on isolated memory : SUCCESS
+Memmove, (native types) destination after source : SUCCESS
+Memmove, (native types) destination before source : SUCCESS
+Memmove, (object types) on isolated memory : FAILURE
+Memmove, (object types) destination after source : SUCCESS
+Memmove, (object types) destination before source : SUCCESS
+Accessing sparse arrays : SUCCESS

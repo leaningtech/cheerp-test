@@ -1,0 +1,3 @@
+New array with [[cheerp::noinit]] : FAILURE
+New multi array with [[cheerp::noinit]] : SUCCESS
+New with [[cheerp::noinit]] : SUCCESS
