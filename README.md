@@ -51,7 +51,7 @@ Other test categories are available but may have issues. We recommend starting w
 
 1. **Clone or download this test directory**
    ```bash
-   git clone <repository-url> cheerp-tests
+   git clone github.com/leaningtech/cheerp-test cheerp-tests
    cd cheerp-tests
    ```
 
@@ -67,13 +67,6 @@ Other test categories are available but may have issues. We recommend starting w
    lit --version
    ```
 
-4. **Configure test paths (if needed)**
-   
-   The test suite uses `lit.cfg` which defines substitutions like `%cheerp_clang`. If your Cheerp installation is not at `/opt/cheerp/`, edit `lit.cfg`:
-   ```python
-   config.substitutions.append(('%cheerp_clang', '/your/path/to/cheerp/bin/clang++'))
-   ```
-
 ## Running Tests
 
 ### Quick Start
@@ -85,10 +78,6 @@ make
 make all
 ```
 
-Run smoke + experimental tests:
-```bash
-make quick
-```
 
 ### Common Test Commands
 
@@ -101,11 +90,8 @@ make lit-smoke
 # Memory management tests
 make lit-memory
 
-# Experimental tests
+# new self-made tests used for testing the test suite
 make lit-experimental
-
-# Run smoke + experimental together
-make quick
 
 # Control parallelism
 make JOBS=4            # Run with 4 parallel jobs
@@ -118,11 +104,6 @@ make JOBS=1            # Run sequentially
 # Run all unit tests (WARNING: many tests may fail)
 make lit-unit-parallel
 make lit-unit-seq
-
-# Run specific test categories (may not work correctly yet)
-make lit-codegen       # Code generation tests
-make lit-std           # Standard library tests
-make lit-dom           # DOM API tests
 
 # Run tests by compilation target (may not work correctly yet)
 make lit-preexecutable # Tests all 3 targets
@@ -166,37 +147,6 @@ cat lit-memory-output.log
 # View experimental test results
 cat lit-experimental-output.log
 ```
-
-## Test Structure
-
-```
-.
-├── unit/                   # Main test suite (194 tests)
-│   ├── memory/            # Memory management tests ✅ WORKING
-│   ├── bitfield/          # Bitfield tests
-│   ├── client/            # Client-side DOM API tests
-│   ├── closures/          # Closure and lambda tests
-│   ├── codegen/           # Code generation tests
-│   ├── dom/               # DOM manipulation tests
-│   ├── downcast/          # Downcast operation tests
-│   ├── exceptions/        # Exception handling tests
-│   ├── ffi/               # Foreign Function Interface tests
-│   ├── globals/           # Global variable tests
-│   ├── jsexport/          # JavaScript export tests
-│   ├── randomcfg/         # Random control flow tests
-│   ├── static/            # Static member tests
-│   ├── std/               # Standard library tests
-│   ├── threading/         # Threading tests
-│   ├── types/             # Type system tests
-│   ├── vbases/            # Virtual base class tests
-│   └── virtual/           # Virtual function tests
-├── experimental/          # Experimental/development tests ✅ WORKING
-├── lit.cfg               # lit configuration file
-├── Makefile              # Test automation
-└── README.md             # This file
-```
-
-**Note**: Most subdirectories are in development. Start with `memory/` and `experimental/` directories.
 
 ## Understanding Test Files
 
@@ -248,65 +198,6 @@ Cheerp supports three compilation targets:
    /opt/cheerp/bin/clang++ -target cheerp-wasm -cheerp-linear-output=asmjs source.cpp -o output.js
    ```
 
-## Test Categories
-
-Tests are organized by functionality and compilation target:
-
-### Currently Working
-- **Smoke tests** (`make lit-smoke`) - One test per subdirectory for quick validation
-- **Memory tests** (`make lit-memory`) - Memory management and allocation tests
-- **Experimental tests** (`make lit-experimental`) - Development and experimental features
-
-### In Development
-These test categories are available but may have issues:
-- **Pre-executable tests** - Tests compiled to all 3 targets
-- **Common tests** - Shared between GenericJS and WebAssembly
-- **GenericJS-only** - Tests that only work with pure JavaScript
-- **AsmJS-only** - Tests specific to asm.js backend
-- **WebAssembly-only** - Tests specific to pure WebAssembly
-
-## Troubleshooting
-
-### lit command not found
-```bash
-# Install lit
-pip3 install --user lit
-
-# Add to PATH
-echo 'export PATH=$HOME/.local/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### FileCheck not found
-```bash
-# Install LLVM tools
-sudo apt install llvm
-
-# Or set FileCheck path in lit.cfg
-# config.substitutions.append(('%FileCheck', '/path/to/FileCheck'))
-```
-
-### Cheerp compiler not found
-```bash
-# Verify installation
-ls /opt/cheerp/bin/clang++
-
-# If installed elsewhere, update lit.cfg
-```
-
-### Tests fail with "No such file or directory"
-```bash
-# Clean and retry
-make clean
-make
-```
-
-### Node.js version issues
-Some tests may require a recent Node.js version:
-```bash
-node --version  # Should be v14+ recommended
-```
-
 ## Clean Up
 
 Remove all generated files and logs:
@@ -323,7 +214,7 @@ This removes:
 
 When adding new tests:
 
-1. Place them in the appropriate `unit/` subdirectory or `experimental/`
+1. Place them in the appropriate `unit/` subdirectory
 2. Follow the existing test format with RUN and CHECK directives
 3. Test all relevant compilation targets
 4. Ensure tests pass before committing:
@@ -342,14 +233,3 @@ View all available make targets:
 ```bash
 make help
 ```
-
-## License
-
-These tests are part of the Cheerp project.
-Copyright Leaning Technologies.
-
-## Links
-
-- Cheerp Website: https://leaningtech.com/cheerp/
-- Cheerp Documentation: https://docs.leaningtech.com/cheerp/
-- LLVM lit Documentation: https://llvm.org/docs/CommandGuide/lit.html
