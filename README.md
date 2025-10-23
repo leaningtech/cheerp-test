@@ -216,7 +216,7 @@ When adding new tests:
 
 1. Place them in the appropriate `unit/` subdirectory
 2. Follow the existing test format with RUN and CHECK directives
-3. Test all relevant compilation targets
+3. Test all relevant compilation targetsgit 
 4. Ensure tests pass before committing:
    ```bash
    # Test your specific changes

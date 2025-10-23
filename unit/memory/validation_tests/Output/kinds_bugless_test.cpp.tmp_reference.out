@@ -1,6 +1,0 @@
-Pointer kind on client object : SUCCESS
-Pointer kind on heap allocated object : SUCCESS
-Pointer kind on union 1/2 : SUCCESS
-Pointer kind on union 2/2 : SUCCESS
-Pointer kind on array : SUCCESS
-Force array loads : SUCCESS
