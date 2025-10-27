@@ -1,12 +1,15 @@
+
+//===---------------------------------------------------------------------===//
+//	Copyright 2019-2021 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+// REQUIRES: js
+
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 // CHECK: Calling back functors 1/3 : SUCCESS
 // CHECK: Calling back capturing lambdas 1/2 : SUCCESS
 // CHECK: Calling back functors 3/3 : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2014-2022 Leaning Technologies
-//===----------------------------------------------------------------------===//
 
 #include <cheerp/client.h>
 #include <cheerp/clientlib.h>

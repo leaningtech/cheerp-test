@@ -1,9 +1,10 @@
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
-// RUN: %node %t.js 2>&1 | %FileCheck %s
-
 //===---------------------------------------------------------------------===//
-//	Copyright 2013 Leaning Technlogies
+//	Copyright 2014 Leaning Technlogies
 //===----------------------------------------------------------------------===//
+
+// REQUIRES: js
+
+// RUN: %node %t.js 2>&1 | %FileCheck %s
 
 #include <tests.h>
 #include <stdio.h>

@@ -1,3 +1,8 @@
+
+//===---------------------------------------------------------------------===//
+//	Copyright 2020 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js
@@ -6,10 +11,6 @@
 // RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
 // CHECK: JSExport non-trivial destructor 1/1 : SUCCESS
 // CHECK: JSExport deleter check 1/1 : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2020 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <tests.h>
 #include <jsexport/cheerp_pimpl.h>

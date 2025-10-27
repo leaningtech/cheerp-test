@@ -1,5 +1,5 @@
 CHEERP_CLANG = /opt/cheerp/bin/clang++
-CHEERP_FLAGS ?= -O2
+CHEERP_FLAGS ?= -O1
 EXTRA_FLAGS ?= 
 export CHEERP_FLAGS
 export EXTRA_FLAGS
@@ -221,10 +221,10 @@ lit-smoke:
 			test_files="$$test_files unit/$$dir/test1.cpp"; \
 			echo "  $$dir: test1.cpp"; \
 		else \
-			random_test=$$(find "unit/$$dir" -maxdepth 1 -name "*.cpp" -type f 2>/dev/null | head -1); \
-			if [ -n "$$random_test" ]; then \
-				test_files="$$test_files $$random_test"; \
-				echo "  $$dir: $$(basename $$random_test)"; \
+			alt_test=$$(find "unit/$$dir" -maxdepth 1 -type f -name "*.cpp" 2>/dev/null | sort | head -1); \
+			if [ -n "$$alt_test" ]; then \
+				test_files="$$test_files $$alt_test"; \
+				echo "  $$dir: $$(basename $$alt_test)"; \
 			else \
 				echo "  $$dir: [no tests found]"; \
 			fi; \

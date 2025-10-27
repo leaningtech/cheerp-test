@@ -1,24 +1,60 @@
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp %s -o %t.js
-// RUN: %node %t.js 2>&1 | %FileCheck %s
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js
-// RUN: %node %t_asmjs.js 2>&1 | %FileCheck %s
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm %s -o %t_wasm.js
-// RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
-// CHECK: Access malloc allocated memory : SUCCESS
-// CHECK: Access calloc allocated memory 1/3 : SUCCESS
-// CHECK: Access calloc allocated memory 2/3 : SUCCESS
-// CHECK: Access calloc allocated memory 3/3 : SUCCESS
-// CHECK: Access realloc-ed memory 1/6 : SUCCESS
-// CHECK: Access realloc-ed memory 2/6 : SUCCESS
-// CHECK: Access realloc-ed memory 3/6 : SUCCESS
-// CHECK: Access realloc-ed memory 4/6 : SUCCESS
-// CHECK: Access realloc-ed memory 5/6 : SUCCESS
-// CHECK: Access realloc-ed memory 6/6 : SUCCESS
-// CHECK: Access realloc-ed from NULL memory 1/1 : SUCCESS
-// CHECK: Access realloc-ed from NULL memory 2/2 : SUCCESS
-// CHECK: Access realloc-ed from NULL memory 3/3 : SUCCESS
-// CHECK: Access new allocated memory : SUCCESS
-// CHECK: Access variable sized new allocated memory : SUCCESS
+// RUN: %if_js %cheerp_clang -O1 -frtti -I%S/.. -target cheerp %s -o %t.js %endif
+// RUN: %if_js echo "---RUNNING JS target ---" %endif
+// RUN: %if_js %node %t.js 2>&1 | %FileCheck %s -dump-input=fail --check-prefix=JS_CHECK -vv %endif
+// RUN: %if_asmjs %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js %endif
+// RUN: %if_asmjs echo "---RUNNING ASMJS target ---" %endif
+// RUN: %if_asmjs %node %t_asmjs.js 2>&1 | %FileCheck %s -dump-input=fail --check-prefix=ASMJS_CHECK -vv %endif
+// RUN: %if_wasm %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm %s -o %t_wasm.js %endif
+// RUN: %if_wasm echo "---RUNNING WASM target ---" %endif
+// RUN: %if_wasm %node %t_wasm.js 2>&1 | %FileCheck %s -dump-input=fail --check-prefix=WASM_CHECK -vv %endif
+
+// JS_CHECK: Access malloc allocated memory : SUCCESS
+// JS_CHECK: Access calloc allocated memory 1/3 : SUCCESS
+// JS_CHECK: Access calloc allocated memory 2/3 : SUCCESS
+// JS_CHECK: Access calloc allocated memory 3/3 : SUCCESS
+// JS_CHECK: Access realloc-ed memory 1/6 : SUCCESS
+// JS_CHECK: Access realloc-ed memory 2/6 : SUCCESS
+// JS_CHECK: Access realloc-ed memory 3/6 : SUCCESS
+// JS_CHECK: Access realloc-ed memory 4/6 : SUCCESS
+// JS_CHECK: Access realloc-ed memory 5/6 : SUCCESS
+// JS_CHECK: Access realloc-ed memory 6/6 : SUCCESS
+// JS_CHECK: Access realloc-ed from NULL memory 1/1 : SUCCESS
+// JS_CHECK: Access realloc-ed from NULL memory 2/2 : SUCCESS
+// JS_CHECK: Access realloc-ed from NULL memory 3/3 : SUCCESS
+// JS_CHECK: Access new allocated memory : SUCCESS
+// JS_CHECK: Access variable sized new allocated memory : SUCCESS
+
+// ASMJS_CHECK: Access malloc allocated memory : SUCCESS
+// ASMJS_CHECK: Access calloc allocated memory 1/3 : SUCCESS
+// ASMJS_CHECK: Access calloc allocated memory 2/3 : SUCCESS
+// ASMJS_CHECK: Access calloc allocated memory 3/3 : SUCCESS
+// ASMJS_CHECK: Access realloc-ed memory 1/6 : SUCCESS
+// ASMJS_CHECK: Access realloc-ed memory 2/6 : SUCCESS
+// ASMJS_CHECK: Access realloc-ed memory 3/6 : SUCCESS
+// ASMJS_CHECK: Access realloc-ed memory 4/6 : SUCCESS
+// ASMJS_CHECK: Access realloc-ed memory 5/6 : SUCCESS
+// ASMJS_CHECK: Access realloc-ed memory 6/6 : SUCCESS
+// ASMJS_CHECK: Access realloc-ed from NULL memory 1/1 : SUCCESS
+// ASMJS_CHECK: Access realloc-ed from NULL memory 2/2 : SUCCESS
+// ASMJS_CHECK: Access realloc-ed from NULL memory 3/3 : SUCCESS
+// ASMJS_CHECK: Access new allocated memory : SUCCESS
+// ASMJS_CHECK: Access variable sized new allocated memory : SUCCESS
+
+// WASM_CHECK: Access malloc allocated memory : SUCCESS
+// WASM_CHECK: Access calloc allocated memory 1/3 : SUCCESS
+// WASM_CHECK: Access calloc allocated memory 2/3 : SUCCESS
+// WASM_CHECK: Access calloc allocated memory 3/3 : SUCCESS
+// WASM_CHECK: Access realloc-ed memory 1/6 : SUCCESS
+// WASM_CHECK: Access realloc-ed memory 2/6 : SUCCESS
+// WASM_CHECK: Access realloc-ed memory 3/6 : SUCCESS
+// WASM_CHECK: Access realloc-ed memory 4/6 : SUCCESS
+// WASM_CHECK: Access realloc-ed memory 5/6 : SUCCESS
+// WASM_CHECK: Access realloc-ed memory 6/6 : SUCCESS
+// WASM_CHECK: Access realloc-ed from NULL memory 1/1 : SUCCESS
+// WASM_CHECK: Access realloc-ed from NULL memory 2/2 : SUCCESS
+// WASM_CHECK: Access realloc-ed from NULL memory 3/3 : SUCCESS
+// WASM_CHECK: Access new allocated memory : SUCCESS
+// WASM_CHECK: Access variable sized new allocated memory : SUCCESS
 
 //===---------------------------------------------------------------------===//
 //	Copyright 2013 Leaning Technlogies

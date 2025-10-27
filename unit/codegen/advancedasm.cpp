@@ -1,3 +1,9 @@
+//===---------------------------------------------------------------------===//
+//	Copyright 2014 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+// REQUIRES: js
+
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 // CHECK: Advanced inline asm 1/3 : SUCCESS
@@ -5,10 +11,6 @@
 // CHECK: Advanced inline asm 3/3 : SUCCESS
 // CHECK: CHEERP_OBJECT macro 1/2 : SUCCESS
 // CHECK: CHEERP_OBJECT macro 2/2 : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2018 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <cheerp/client.h>
 #include <tests.h>

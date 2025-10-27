@@ -1,3 +1,7 @@
+//===---------------------------------------------------------------------===//
+//	Copyright 2020 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js
@@ -13,10 +17,6 @@
 // CHECK: JSExport free function returns bool : SUCCESS
 // CHECK: JSExport free function void(void) 2/2 : SUCCESS
 // CHECK: JSExport free function void(void) genercijs 2/2 : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2020 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <tests.h>
 

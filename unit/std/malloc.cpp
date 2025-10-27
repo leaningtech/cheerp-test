@@ -1,12 +1,3 @@
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js
-// RUN: %node %t_asmjs.js 2>&1 | %FileCheck %s
-// CHECK: Allocating 16384 bytes : SUCCESS
-// CHECK: Checking malloc'd block : SUCCESS
-// CHECK: Malloc'd blocks overlap 1/3 : SUCCESS
-// CHECK: Malloc'd blocks overlap 2/3 : SUCCESS
-// CHECK: Malloc'd blocks overlap 3/3 : SUCCESS
-// CHECK: Checking malloc'd blocks : SUCCESS
-
 /*
  * Copyright (c) 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
  *	The President and Fellows of Harvard College.
@@ -50,6 +41,20 @@
 // https://github.com/vivekbhalla/OS161/blob/master/src/user/testbin/malloctest/malloctest.c
 // We probably want to add more tests from there in the future, in particular those for
 // graceful failure of malloc (our malloc never returns NULL for now)
+
+
+//REQUIRES: asmjs
+
+// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js
+// RUN: %node %t_asmjs.js 2>&1 | %FileCheck %s
+// CHECK: Allocating 16384 bytes : SUCCESS
+// CHECK: Checking malloc'd block : SUCCESS
+// CHECK: Malloc'd blocks overlap 1/3 : SUCCESS
+// CHECK: Malloc'd blocks overlap 2/3 : SUCCESS
+// CHECK: Malloc'd blocks overlap 3/3 : SUCCESS
+// CHECK: Checking malloc'd blocks : SUCCESS
+
+
 
 #include <stdio.h>
 #include <stdlib.h>

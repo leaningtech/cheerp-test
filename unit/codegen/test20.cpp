@@ -1,13 +1,15 @@
+//===---------------------------------------------------------------------===//
+//	Copyright 2014 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+// REQUIRES: js
+
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 // CHECK: Merging arrays in structs 1/4 : SUCCESS
 // CHECK: Merging arrays in structs 2/4 : SUCCESS
 // CHECK: Merging arrays in structs 3/4 : SUCCESS
 // CHECK: Merging arrays in structs 4/4 : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2015 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <tests.h>
 

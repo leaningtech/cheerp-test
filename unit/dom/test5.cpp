@@ -1,10 +1,13 @@
+
+//===---------------------------------------------------------------------===//
+//	Copyright 2019-2021 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+// REQUIRES: js
+
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 // CHECK: Comparing client objects : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2014 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <cheerp/client.h>
 #include <cheerp/clientlib.h>

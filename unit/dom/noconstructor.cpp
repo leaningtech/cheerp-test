@@ -1,11 +1,15 @@
+
+//===---------------------------------------------------------------------===//
+//	Copyright 2019-2021 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+
+// REQUIRES: js
+
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 // CHECK: Creating client object that do not have a constructor : SUCCESS
 // CHECK: Creating template array wrapper type : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2016 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <tests.h>
 #include <cheerp/client.h>

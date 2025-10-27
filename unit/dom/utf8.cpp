@@ -1,3 +1,10 @@
+
+//===---------------------------------------------------------------------===//
+//	Copyright 2019-2021 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+// REQUIRES: js
+
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 // CHECK: UTF-8 support: 1/5 : SUCCESS
@@ -5,10 +12,6 @@
 // CHECK: UTF-8 support: 3/5 : SUCCESS
 // CHECK: UTF-8 support: 4/5 : SUCCESS
 // CHECK: UTF-8 support: 5/5 : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2017 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <tests.h>
 #include <cheerp/client.h>

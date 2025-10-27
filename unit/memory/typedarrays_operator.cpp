@@ -1,5 +1,7 @@
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp %s -o %t.js
-// RUN: %node %t.js 2>&1 | %FileCheck %s
+// REQUIRES: js
+
+// RUN: %if_js %cheerp_clang -O1 -frtti -I%S/.. -target cheerp %s -o %t.js %endif
+// RUN: %if_js %node %t.js 2>&1 | %FileCheck %s %endif
 // CHECK: Operator[] on typed arrays 1/2 : SUCCESS
 // CHECK: Operator[] on typed arrays 2/2 : SUCCESS
 

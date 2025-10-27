@@ -1,5 +1,12 @@
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp %s -o %t.js
-// RUN: %node %t.js 2>&1 | %FileCheck %s
+
+//===---------------------------------------------------------------------===//
+//	Copyright 2019-2021 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+// REQUIRES: js
+
+// RUN: %if_js %cheerp_clang -O1 -frtti -I%S/.. -target cheerp %s -o %t.js %endif
+// RUN: %if_js %node %t.js 2>&1 | %FileCheck %s %endif
 // CHECK: Pointer kind on client object : SUCCESS
 // CHECK: Pointer kind on heap allocated object : SUCCESS
 // CHECK: Pointer kind on union 1/2 : SUCCESS
@@ -7,9 +14,6 @@
 // CHECK: Pointer kind on array : SUCCESS
 // CHECK: Force array loads : SUCCESS
 
-//===---------------------------------------------------------------------===//
-//	Copyright 2018 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <tests.h>
 

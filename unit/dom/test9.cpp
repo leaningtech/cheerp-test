@@ -1,3 +1,10 @@
+
+//===---------------------------------------------------------------------===//
+//	Copyright 2019-2021 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+// REQUIRES: js
+
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 // CHECK: JS TMap::get 1/2 : SUCCESS
@@ -10,10 +17,6 @@
 // CHECK: JS TMap::get_delete_ 2/2 : SUCCESS
 // CHECK: JS Tmap::forEach 1/1 : SUCCESS
 // CHECK: JS TMap::clear 1/1 : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2018 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <tests.h>
 #include <cheerp/client.h>

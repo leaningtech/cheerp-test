@@ -1,19 +1,20 @@
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp %s -o %t.js
-// RUN: %node %t.js 2>&1 | %FileCheck %s
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js
-// RUN: %node %t_asmjs.js 2>&1 | %FileCheck %s
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm %s -o %t_wasm.js
-// RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
+//===---------------------------------------------------------------------===//
+//	Copyright 2013 Leaning Technlogies
+//===----------------------------------------------------------------------===//
+
+// RUN: %if_js %cheerp_clang -O1 -frtti -I%S/.. -target cheerp %s -o %t.js %endif
+// RUN: %if_js %node %t.js 2>&1 | %FileCheck %s %endif
+// RUN: %if_asmjs %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js %endif
+// RUN: %if_asmjs %node %t_asmjs.js 2>&1 | %FileCheck %s %endif
+// RUN: %if_wasm %cheerp_clang -O1 -frtti -I%S/.. -target cheerp-wasm %s -o %t_wasm.js %endif
+// RUN: %if_wasm %node %t_wasm.js 2>&1 | %FileCheck %s %endif
+
 // CHECK: Memmove, (native types) on isolated memory : SUCCESS
 // CHECK: Memmove, (native types) destination after source : SUCCESS
 // CHECK: Memmove, (native types) destination before source : SUCCESS
 // CHECK: Memmove, (object types) on isolated memory : SUCCESS
 // CHECK: Memmove, (object types) destination after source : SUCCESS
 // CHECK: Memmove, (object types) destination before source : SUCCESS
-
-//===---------------------------------------------------------------------===//
-//	Copyright 2013 Leaning Technlogies
-//===----------------------------------------------------------------------===//
 
 #include <tests.h>
 #include <string.h>
