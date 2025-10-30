@@ -6,6 +6,7 @@
 // RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
 
 #include <stdint.h>
+#include <tests.h>
 
 __attribute__((cheerp_jsexport_unsafe))
 uint32_t
@@ -13,3 +14,13 @@ doSomething(uint32_t a)
 {
 	return a*a;
 }
+
+int main()
+{
+	uint32_t val = 5;
+	uint32_t result = doSomething(val);
+	assertEqual<uint32_t>(result, val * val, "Unsafe_gnu executed");
+	return 0;
+}
+
+//CHECK: Unsafe_gnu executed : SUCCESS

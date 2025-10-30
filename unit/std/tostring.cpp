@@ -7,6 +7,8 @@
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
 // RUN: %node %t.js 2>&1 | %FileCheck %s
 
+// CHECK: std::to_string for floats : SUCCESS
+
 #include <tests.h>
 #include <string>
 

@@ -50,7 +50,7 @@ public:
         void deleter()
         {
                 counter.deleter();
-                //Since for now we have to do without destructor
+                //Sice for now we have to do without destructorn
                 //we declare a class deleter that is manually called and implement the destructor
                 delete m;
         }

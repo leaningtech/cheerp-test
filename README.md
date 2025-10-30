@@ -2,20 +2,34 @@
 
 This directory contains the test suite for the Cheerp compiler. The tests use LLVM's `lit` (LLVM Integrated Tester) framework to verify compiler functionality across different compilation targets.
 
-## Current Status
+## Quick Reference
 
-⚠️ **Note**: This test suite is under active development. Currently working tests:
-- ✅ **Smoke tests** - Quick sanity check (one test per subdirectory)
-- ✅ **Memory tests** - Memory management tests in `unit/memory/`
-- ✅ **Experimental tests** - Experimental tests in `experimental/`
+```bash
+# Run all jsexport tests (19 tests, all passing)
+lit -v unit/jsexport/
 
-Other test categories are available but may have issues. We recommend starting with the working tests above.
+# Run tests with specific compilation target(s)
+lit --param TARGETS=js unit/jsexport/              # JavaScript only
+lit --param TARGETS=wasm,asmjs unit/jsexport/      # WebAssembly + AsmJS only
 
-## next dev steps
+# Run tests with custom compiler flags
+CHEERP_FLAGS="-O3" lit unit/jsexport/              # High optimization
+EXTRA_FLAGS="-cheerp-pretty-code" lit unit/jsexport/ # Readable output
 
- - expand test functionality to all unit test subdirectories
- - allow for flexible use of compilation flags
- - increase general flexibility and functionality of the testing platform 
+# Combine target selection and custom flags
+CHEERP_FLAGS="-O2" lit --param TARGETS=js,wasm unit/jsexport/
+
+# Run a single test
+lit -v unit/jsexport/namespaces.cpp
+
+# Clean up generated files
+find . -type d -name "Output" -exec rm -rf {} +
+```
+
+## Next Development Steps
+
+ - Increase general flexibility and functionality of the testing platform
+ - Output info on failed test target when testing multiple compilation targets
 
 
 ## Prerequisites
@@ -85,6 +99,55 @@ make
 make all
 ```
 
+### Selecting Compilation Targets
+
+By default, tests run against **all three compilation targets** (js, wasm, asmjs). You can selectively enable/disable targets using the `TARGETS` parameter:
+
+```bash
+# Run tests only for JavaScript target
+lit --param TARGETS=js unit/jsexport/
+
+# Run tests for WebAssembly and AsmJS only (skip JavaScript)
+lit --param TARGETS=wasm,asmjs unit/jsexport/
+
+# Run tests for a single target
+lit --param TARGETS=wasm unit/jsexport/
+
+# Default: all targets (equivalent to TARGETS=js,wasm,asmjs)
+lit unit/jsexport/
+```
+
+**Available targets:**
+- `js` - GenericJS (pure JavaScript output)
+- `wasm` - WebAssembly with JavaScript loader
+- `asmjs` - AsmJS backend (WebAssembly with asm.js fallback)
+
+### Adding Custom Compilation Flags
+
+You can add custom compiler flags via environment variables:
+
+```bash
+# Add optimization flags
+CHEERP_FLAGS="-O3" lit unit/jsexport/
+
+# Add extra flags
+EXTRA_FLAGS="-cheerp-pretty-code" lit unit/jsexport/
+
+# Combine both
+CHEERP_FLAGS="-O2" EXTRA_FLAGS="-cheerp-bounds-check" lit unit/jsexport/
+
+# Example: test with different optimization levels
+CHEERP_FLAGS="-O0" lit -v unit/memory/test1.cpp
+CHEERP_FLAGS="-O3" lit -v unit/memory/test1.cpp
+```
+
+**Common useful flags:**
+- `-O0`, `-O1`, `-O2`, `-O3` - Optimization levels
+- `-cheerp-pretty-code` - Generate human-readable JavaScript
+- `-cheerp-bounds-check` - Enable array bounds checking
+- `-cheerp-fix-wrong-func-casts` - Fix function pointer cast issues
+- `-frtti` - Enable run-time type information
+
 ### Common Test Commands
 
 #### Working Tests (Recommended)
@@ -96,7 +159,10 @@ make lit-smoke
 # Memory management tests
 make lit-memory
 
-# new self-made tests used for testing the test suite
+# JavaScript export tests
+make lit-jsexport
+
+# New self-made tests used for testing the test suite
 make lit-experimental
 
 # Control parallelism
@@ -125,6 +191,7 @@ You can also run lit directly:
 ```bash
 # Run working tests
 lit -v unit/memory/          # Memory tests (working)
+lit -v unit/jsexport/        # JavaScript export tests (working)
 lit -v experimental/         # Experimental tests (working)
 
 # Run a single test
@@ -135,6 +202,17 @@ lit -v -j 8 unit/memory/
 
 # Show all output (verbose)
 lit -v -a unit/memory/
+
+# Run tests with specific targets only
+lit -v --param TARGETS=js unit/jsexport/
+lit -v --param TARGETS=wasm,asmjs unit/memory/
+
+# Run tests with custom flags
+CHEERP_FLAGS="-O3" lit -v unit/jsexport/
+EXTRA_FLAGS="-cheerp-pretty-code" lit -v unit/jsexport/
+
+# Combine target selection and custom flags
+CHEERP_FLAGS="-O2" lit -v --param TARGETS=js,wasm unit/jsexport/
 
 # Run all unit tests (warning: many may fail)
 lit -v unit/
@@ -173,16 +251,79 @@ int main() {
 
 ### RUN Directives
 - `// RUN:` - Commands to execute
-- `%cheerp_clang` - Substituted with Cheerp compiler path
+- `%cheerp_clang` - Substituted with Cheerp compiler path (includes CHEERP_FLAGS and EXTRA_FLAGS)
 - `%s` - Source file path
 - `%t` - Temporary output file
 - `%node` - Node.js executable
+- `%FileCheck` - Pattern matching tool
+- `%S` - Directory containing the test
+
+### Conditional Compilation by Target
+
+Tests can conditionally execute based on selected targets:
+
+```cpp
+// Run only if 'js' target is selected
+// RUN: %if_js %cheerp_clang -target cheerp %s -o %t.js %endif
+// RUN: %if_js %node %t.js | %FileCheck %s %endif
+
+// Run only if 'wasm' target is selected
+// RUN: %if_wasm %cheerp_clang -target cheerp-wasm %s -o %t.js %endif
+// RUN: %if_wasm %node %t.js | %FileCheck %s %endif
+
+// Run only if 'asmjs' target is selected
+// RUN: %if_asmjs %cheerp_clang -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t.js %endif
+
+// Use REQUIRES to skip test if target not available
+// REQUIRES: js
+// REQUIRES: wasm
+```
 
 ### CHECK Directives
 - `// CHECK:` - Expected output pattern
+- `// CHECK-DAG:` - Pattern can appear in any order
 - `// CHECK-NOT:` - Pattern that should NOT appear
 - `// CHECK-NEXT:` - Must appear on the next line
 - FileCheck supports regex patterns
+
+## Test Suites
+
+### JavaScript Export Tests (unit/jsexport/)
+
+The `unit/jsexport/` directory contains **19 comprehensive tests** for Cheerp's JavaScript export functionality (`[[cheerp::jsexport]]` attribute). These tests verify that C++ classes, functions, and variables are correctly exported to JavaScript.
+
+**All 19 tests passing (100%):**
+
+```bash
+# Run all jsexport tests
+lit -v unit/jsexport/
+
+# Run with specific target
+lit -v --param TARGETS=js unit/jsexport/
+
+# Test a specific feature
+lit -v unit/jsexport/namespaces.cpp
+lit -v unit/jsexport/inheritance.cpp
+```
+
+**Test coverage includes:**
+- Basic exports (empty classes, simple functions)
+- Class features (constructors, destructors, member variables, static variables)
+- Inheritance and polymorphism
+- Namespaces and nested structures
+- Parameter types (builtin types, client library types)
+- Pointer comparisons and arrays of structs
+- Unsafe exports (`[[cheerp::jsexport_unsafe]]`)
+- Factory patterns and function invocation
+- Pimpl pattern with modules
+
+### Memory Tests (unit/memory/)
+
+Tests for memory management, allocation, and pointer operations.
+
+```bash
+lit -v unit/memory/
+```
 
 ## Compilation Targets
 
@@ -215,6 +356,19 @@ This removes:
 - Test output files (`unit/*/Output/`, `experimental/Output/`)
 - Log files (`*.log`)
 - Temporary compilation artifacts
+
+### Manual Cleanup
+
+Lit stores test outputs in `Output/` directories:
+```bash
+# Remove all Output directories
+find . -type d -name "Output" -exec rm -rf {} +
+
+# View generated files before cleaning
+ls -la unit/jsexport/Output/
+```
+
+**Note:** Output directories are useful for debugging failed tests. Consider keeping them until tests pass.
 
 ## Contributing
 

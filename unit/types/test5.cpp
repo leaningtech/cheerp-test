@@ -5,6 +5,17 @@
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm %s -o %t_wasm.js
 // RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
 
+//CHECK: Int16 unsigned addition : SUCCESS
+//CHECK: Int16 unsigned subtraction : SUCCESS
+//CHECK: Int16 unsigned multiplication : SUCCESS
+//CHECK: Int16 unsigned division : SUCCESS
+//CHECK: Int16 unsigned remainder : SUCCESS
+//CHECK: Int16 signed addition : SUCCESS
+//CHECK: Int16 signed subtraction : SUCCESS
+//CHECK: Int16 signed multiplication : SUCCESS
+//CHECK: Int16 signed division : SUCCESS
+//CHECK: Int16 signed remainder : SUCCESS
+
 //===---------------------------------------------------------------------===//
 //	Copyright 2013 Leaning Technlogies
 //===----------------------------------------------------------------------===//

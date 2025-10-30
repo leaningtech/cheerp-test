@@ -4,10 +4,6 @@
 // RUN: %node %t_asmjs.js 2>&1 | %FileCheck %s
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm %s -o %t_wasm.js
 // RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
-// CHECK: typeid().name() support 1/N : SUCCESS
-// CHECK: typeid().name() support 2/N : SUCCESS
-// CHECK: typeid().name() support 3/N : SUCCESS
-// CHECK: typeid().name() support 4/N : SUCCESS
 // CHECK: A::foo is called : SUCCESS
 // CHECK: A::bar is not called : SUCCESS
 // CHECK: B::foo is not called : SUCCESS
@@ -22,6 +18,10 @@
 // CHECK: Multiple inheritance support 2/N : SUCCESS
 // CHECK: Multiple inheritance support 3/N : SUCCESS
 // CHECK: Multiple inheritance support 4/N : SUCCESS
+// CHECK: typeid().name() support 1/N : SUCCESS
+// CHECK: typeid().name() support 2/N : SUCCESS
+// CHECK: typeid().name() support 3/N : SUCCESS
+// CHECK: typeid().name() support 4/N : SUCCESS
 
 //===---------------------------------------------------------------------===//
 //	Copyright 2015 Leaning Technlogies

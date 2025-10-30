@@ -1,9 +1,24 @@
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp %s -o %t.js
-// RUN: %node %t.js 2>&1 | %FileCheck %s
+// RUN: %node %t.js 2>&1 | %FileCheck %s --check-prefix=CHECK --check-prefix=CHECK-JS
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -cheerp-linear-output=asmjs %s -o %t_asmjs.js
-// RUN: %node %t_asmjs.js 2>&1 | %FileCheck %s
+// RUN: %node %t_asmjs.js 2>&1 | %FileCheck %s --check-prefix=CHECK --check-prefix=CHECK-JS
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm %s -o %t_wasm.js
-// RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
+// RUN: %node %t_wasm.js 2>&1 | %FileCheck %s --check-prefix=CHECK --check-prefix=CHECK-WASM
+
+//CHECK-JS: Float to int (signed) 1/3 : SUCCESS
+//CHECK-WASM-NOT: Float to int (signed) 1/3
+//CHECK: Float to int (signed) 2/3 : SUCCESS
+//CHECK: Float to int (signed) 3/3 : SUCCESS
+//CHECK: Float to int (unsigned) 1/3 : SUCCESS
+//CHECK: Float to int (unsigned) 2/3 : SUCCESS
+//CHECK: Float to int (unsigned) 3/3 : SUCCESS
+//CHECK-JS: Double to int (signed) 1/3 : SUCCESS
+//CHECK-WASM-NOT: Double to int (signed) 1/3
+//CHECK: Double to int (signed) 2/3 : SUCCESS
+//CHECK: Double to int (signed) 3/3 : SUCCESS
+//CHECK: Double to int (unsigned) 1/3 : SUCCESS
+//CHECK: Double to int (unsigned) 2/3 : SUCCESS
+//CHECK: Double to int (unsigned) 3/3 : SUCCESS
 
 //===---------------------------------------------------------------------===//
 //	Copyright 2018 Leaning Technlogies

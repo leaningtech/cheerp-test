@@ -4,8 +4,8 @@
 // RUN: test -f %t/w.wasm
 // RUN: test -f %t/w
 // RUN: test -f %t/j
-// RUN: %node %t/w 2>&1 | %FileCheck %s --check-prefix=EXEC
-// RUN: %node %t/j 2>&1 | %FileCheck %s 
+// RUN: %node %t/w 2>&1 | %FileCheck %s
+// RUN: %node %t/j 2>&1 | %FileCheck %s
 
 // Test function calls and more complex control flow
 #include <stdio.h>
@@ -15,11 +15,10 @@ int fibonacci(int n) {
     return fibonacci(n-1) + fibonacci(n-2);
 }
 
-int main() {
+int webMain() {
     int result = fibonacci(8);
     printf("Fibonacci(8) = %d\n", result);
     
-    // Test loop
     int sum = 0;
     for (int i = 1; i <= 5; i++) {
         sum += i;

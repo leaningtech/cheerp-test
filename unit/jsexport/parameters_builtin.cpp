@@ -8,14 +8,15 @@
 // RUN: %node %t_asmjs.js 2>&1 | %FileCheck %s
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm %s -o %t_wasm.js
 // RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
-// CHECK: JSExport free function void(void) 1/2 : SUCCESS
-// CHECK: JSExport free function void(void) 1/2 : SUCCESS
+
 // CHECK: JSExport free function int : SUCCESS
 // CHECK: JSExport free function unsigned int : SUCCESS
 // CHECK: JSExport free function char : SUCCESS
 // CHECK: JSExport free function unsigned char : SUCCESS
 // CHECK: JSExport free function returns bool : SUCCESS
+// CHECK: JSExport free function void(void) 1/2 : SUCCESS
 // CHECK: JSExport free function void(void) 2/2 : SUCCESS
+// CHECK: JSExport free function void(void) 1/2 : SUCCESS
 // CHECK: JSExport free function void(void) genercijs 2/2 : SUCCESS
 
 #include <tests.h>

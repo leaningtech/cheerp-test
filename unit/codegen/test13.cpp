@@ -5,6 +5,8 @@
 // RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm %s -o %t_wasm.js
 // RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
 
+//CHECK: Multibyte string support : SUCCESS
+
 //===---------------------------------------------------------------------===//
 //	Copyright 2015 Leaning Technlogies
 //===----------------------------------------------------------------------===//

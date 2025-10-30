@@ -6,9 +6,20 @@
 // RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
 
 #include <stdint.h>
+#include <tests.h>
 
 [[cheerp::jsexport_unsafe]]
-uint32_t doSomethin2g(uint32_t a)
+uint32_t doSomething2(uint32_t a)
 {
 	return a*a;
 }
+
+int main()
+{
+	uint32_t val = 5;
+	uint32_t result = doSomething2(val);
+	assertEqual<uint32_t>(result, val * val, "Unsafe_clang executed");
+	return 0;
+}
+
+//CHECK: Unsafe_clang executed : SUCCESS
