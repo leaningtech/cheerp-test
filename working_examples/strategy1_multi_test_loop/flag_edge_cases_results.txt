@@ -1,0 +1,186 @@
+Edge Cases Tested:
+==================
+conflict_bigint_wrong_target: -cheerp-use-bigints
+conflict_opt: -O0 -O3
+conflict_pthread_js: -pthread
+dup_no_lto: -cheerp-no-lto -cheerp-no-lto
+dup_o_levels: -O2 -O1
+dup_opt: -O1 -O1
+dup_pretty: -cheerp-pretty-code -cheerp-pretty-code
+empty_flag: 
+invalid_flag: --invalid-cheerp-flag
+invalid_opt: -cheerp-invalid-optimization
+long_flag: -cheerp-this-is-an-extremely-long-and-definitely-invalid-flag-name-that-should-fail
+malformed_double: -O -1
+malformed_eq: --O=1
+malformed_hyphen: O1
+misspell_bounds: -cheerp-bound-check
+misspell_lto: -cheerp-no-ltoo
+misspell_pretty: -cheerp-prety-code
+random_flag: -xyz-invalid
+typo_lto: -cheerp-no_lto
+typo_opt2: -cheerp_pretty-code
+typo_opt3: -cheerp-pretty_code
+typo_opt: -cheerp-prettycode
+valid_combined: -O2 -cheerp-no-lto
+valid_O1: -O1
+valid_pretty: -cheerp-pretty-code
+  Flags: CHEERP_FLAGS='-O1'
+  Expected: PASS
+  Actual: PASS
+  ✓ EXPECTED PASS (control case verified)
+
+  Flags: CHEERP_FLAGS='-O1 -O1'
+  Expected: FAIL
+  Actual: PASS
+  ✗ UNEXPECTED PASS (should have failed)
+
+  Flags: CHEERP_FLAGS='-O0 -O3'
+  Expected: FAIL
+  Actual: PASS
+  ✗ UNEXPECTED PASS (should have failed)
+
+  Flags: CHEERP_FLAGS='--invalid-cheerp-flag'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-cheerp-prety-code'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-cheerp-no-ltoo'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-cheerp-pretty-code -cheerp-pretty-code'
+  Expected: FAIL
+  Actual: PASS
+  ✗ UNEXPECTED PASS (should have failed)
+
+  Flags: CHEERP_FLAGS='-cheerp-prettycode'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-O2 -cheerp-no-lto'
+  Expected: PASS
+  Actual: FAIL
+  ✗ UNEXPECTED FAIL (should have passed)
+
+  Flags: CHEERP_FLAGS='--O=1'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-cheerp-this-is-an-extremely-long-and-definitely-invalid-flag-name-that-should-fail'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-cheerp-pretty_code'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-cheerp_pretty-code'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-cheerp-bound-check'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-xyz-invalid'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-pthread'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-cheerp-no-lto -cheerp-no-lto'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-O2 -O1'
+  Expected: FAIL
+  Actual: PASS
+  ✗ UNEXPECTED PASS (should have failed)
+
+  Flags: CHEERP_FLAGS='-O -1'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='-cheerp-pretty-code'
+  Expected: PASS
+  Actual: PASS
+  ✓ EXPECTED PASS (control case verified)
+
+  Flags: CHEERP_FLAGS='-cheerp-use-bigints'
+  Expected: FAIL
+  Actual: PASS
+  ✗ UNEXPECTED PASS (should have failed)
+
+  Flags: CHEERP_FLAGS='-cheerp-invalid-optimization'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS=''
+  Expected: PASS
+  Actual: PASS
+  ✓ EXPECTED PASS (control case verified)
+
+  Flags: CHEERP_FLAGS='-cheerp-no_lto'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+  Flags: CHEERP_FLAGS='O1'
+  Expected: FAIL
+  Actual: FAIL
+  ✓ EXPECTED FAILURE (correct)
+
+
+Edge Case Testing Analysis
+==========================
+Timestamp: Mon Nov 10 06:13:03 PM CET 2025
+
+Results:
+--------
+Total Edge Cases Tested: 25
+
+Expected Failures (Invalid Flags):
+  Total: 21
+  Actual Failures: 16
+  Unexpected Passes: 5
+
+Expected Passes (Valid Flags - Control Cases):
+  Total: 4
+  Actual Passes: 3
+  Unexpected Failures: 1
+
+⚠ Some edge cases did not behave as expected:
+  - Expected 21 failures, got 16
+  - 5 invalid flag(s) unexpectedly compiled
+  - Expected 4 valid flags to pass, got 3
+  - 1 valid flag(s) unexpectedly failed to compile
+
+Recommendations:
+---------------
+- Review invalid flags that unexpectedly compiled (see test details above)
+
+- These may indicate the compiler is too permissive with invalid flags
+- Or they may indicate legitimate edge cases that should be handled
+- Review valid flags that unexpectedly failed (see test details above)
+
+- This indicates an issue with valid flag handling

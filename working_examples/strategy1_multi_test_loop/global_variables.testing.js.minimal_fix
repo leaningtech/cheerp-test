@@ -1,0 +1,30 @@
+function onInstantiation(_)
+{
+	// Only use accessor functions - globalVariable is not directly exported
+	assert(3 == _.getGlobalVariable(), "JS: 3 == getGlobalVariable()");
+	_.setGlobalVariable(4);
+	assert(4 == _.getGlobalVariable(), "JS: 4 == getGlobalVariable()");
+	_.setGlobalVariable(5);
+	assert(5 == _.getGlobalVariable(), "JS: 5 == getGlobalVariable()");
+}
+function assert(condition, message)
+{
+	console.log(message, condition ? "SUCCESS" : "FAILURE");
+}
+function getPromise(_)
+{
+	return _.getGlobalVariable.promise;
+}
+function getExports()
+{
+	// Return the actual exported functions
+	return {
+		getGlobalVariable: getGlobalVariable,
+		setGlobalVariable: setGlobalVariable
+	};
+}
+function onError(err)
+{
+	console.log("unexpected exit : FAILURE");
+	throw err;
+}

@@ -1,12 +1,12 @@
-// XFAIL: *
-// NOTE: This test requires .testing.js harness infrastructure not yet implemented in lit
 
 
 
 // REQUIRES: wasm
 
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -pthread %s -o %t_wasm.js
-// RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
+// This test uses threading-wrapper to provide Worker polyfills for pthread support
+// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -pthread -cheerp-make-module=es6 %s -o %t.mjs
+// RUN: %S/../../test-wrappers/threading-wrapper.mjs %t.mjs 2>&1 | %FileCheck %s
+
 // CHECK: Simple compare exchange : SUCCESS
 
 #include <tests.h>

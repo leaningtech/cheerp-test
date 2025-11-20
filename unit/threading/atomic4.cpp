@@ -1,5 +1,3 @@
-// XFAIL: *
-// NOTE: This test requires .testing.js harness infrastructure not yet implemented in lit
 
 // This test is for the musl atomic primivites.
 // The contents below are copied from a musl header file (/arch/cheerp/atomic_arch.h) and should be in sync with this header file.
@@ -8,8 +6,10 @@
 
 // REQUIRES: wasm
 
-// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -pthread %s -o %t_wasm.js
-// RUN: %node %t_wasm.js 2>&1 | %FileCheck %s
+// This test uses threading-wrapper to provide Worker polyfills for pthread support
+// RUN: %cheerp_clang -O1 -frtti -I%S/.. -cheerp-bounds-check -cheerp-fix-wrong-func-casts -target cheerp-wasm -pthread -cheerp-make-module=es6 %s -o %t.mjs
+// RUN: %S/../../test-wrappers/threading-wrapper.mjs %t.mjs 2>&1 | %FileCheck %s
+
 // CHECK: Return value of a_cas when value is swapped : SUCCESS
 // CHECK: Value after the a_cas swapped : SUCCESS
 // CHECK: Return value of a_cas when value is not swapped. : SUCCESS

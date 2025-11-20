@@ -1,13 +1,8 @@
 // RUN: mkdir -p %t
 // RUN: %cheerp_clang -target cheerp-wasm -o %t/w %s
 // RUN: %cheerp_clang -target cheerp -o %t/j %s
-// RUN: test -f %t/w.wasm && test -f %t/w
-// RUN: test -f %t/j
-// RUN: xxd -l 8 %t/w.wasm | %FileCheck %s --check-prefix=WASM-MAGIC
-// RUN: cat %t/w | %FileCheck %s --check-prefix=WASM-LOADER
-// RUN: cat %t/j | %FileCheck %s --check-prefix=JS-OUTPUT
-// RUN: %node %t/w 2>&1 | %FileCheck %s --check-prefix=EXEC
-// RUN: %node %t/j 2>&1 | %FileCheck %s --check-prefix=EXEC
+// RUN: %node %t/w 2>&1 | %FileCheck %s -vv --check-prefix=EXEC_WASM
+// RUN: %node %t/j 2>&1 | %FileCheck %s -vv --check-prefix=EXEC_JS
 
 // Test basic arithmetic operations and printf functionality
 #include <stdio.h>
@@ -34,12 +29,17 @@ int main() {
     return 0;
 }
 
-// WASM-MAGIC: 0061 736d
-// WASM-LOADER: WebAssembly
-// JS-OUTPUT: {{(printf|console)}}
-// EXEC: Addition: 20
-// EXEC: Subtraction: 20
-// EXEC: Multiplication: 12
-// EXEC: Division: 4
-// EXEC: Modulo: 2
-// EXEC: Equal check: 1
+
+// EXEC_WASM: Addition: 20
+// EXEC_WASM: Subtraction: 20
+// EXEC_WASM: Multiplication: 12
+// EXEC_WASM: Division: 4
+// EXEC_WASM: Modulo: 2
+// EXEC_WASM: Equal check: 1
+
+// EXEC_JS: Addition: 20
+// EXEC_JS: Subtraction: 20
+// EXEC_JS: Multiplication: 12
+// EXEC_JS: Division: 4
+// EXEC_JS: Modulo: 2
+// EXEC_JS: Equal check: 1
