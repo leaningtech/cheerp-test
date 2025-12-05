@@ -1,23 +1,22 @@
 // Test empty classes with jsexport across all targets
+//
 // RUN: mkdir -p %t
-// Preexecution mode (PREEXECUTE_MODE=true):
-// RUN: compile_for_preexec_js -O1 -o %t/j_pre %s 2>&1 && echo "Preexecution compile successful" | %FileCheck %s --check-prefix=PRE
-// RUN: compile_for_preexec_asmjs -O1 -o %t/a_pre %s 2>&1 && echo "Preexecution compile successful" | %FileCheck %s --check-prefix=PRE
 //
-// Regular mode (PREEXECUTE_MODE=false):
-// RUN: compile_for_wasm -O1 -o %t/w %s
-// RUN: compile_for_js -O1 -o %t/j %s
-// RUN: compile_for_asmjs -O1 -o %t/a %s
+// Regular mode (PREEXECUTE_MODE=false) - Test all 4 module types (vanilla, ES6, CommonJS, closure):
+// RUN: regular_only run_if_js %S/test_all_modules.sh %s %S/empty_class.testing.js %t compile_mode_js 2>&1 | %FileCheck %s 
 //
-// RUN: run_if_wasm test -f %t/w && test -f %t/w.wasm
-// RUN: run_if_js test -f %t/j
-// RUN: run_if_asmjs test -f %t/a
+// Also test wasm and asmjs with vanilla driver:
+// RUN: regular_only run_if_wasm %valgrind compile_mode_wasm -o %t/w %s 2>&1
+// RUN: regular_only run_if_wasm python3 %S/create_driver.py %t/w %S/empty_class.testing.js %t/w_driver.js --module=vanilla
+// RUN: regular_only run_if_wasm %node %t/w_driver.js 2>&1 | %FileCheck %s
 //
-// RUN: run_if_wasm %node %t/w 2>&1
-// RUN: run_if_js %node %t/j 2>&1
-// RUN: run_if_asmjs %node %t/a 2>&1
+// RUN: regular_only run_if_asmjs %valgrind compile_mode_asmjs -o %t/a %s 2>&1
+// RUN: regular_only run_if_asmjs python3 %S/create_driver.py %t/a %S/empty_class.testing.js %t/a_driver.js --module=vanilla
+// RUN: regular_only run_if_asmjs %node %t/a_driver.js 2>&1 | %FileCheck %s 
 //
-// PRE: Preexecution compile successful
+// CHECK: can construct new Empty(): false
+// CHECK: can construct new AllPrivate(): false
+// CHECK: can construct new OnlyStatic(): false
 
 class [[cheerp::jsexport]] Empty {};
 

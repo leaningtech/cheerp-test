@@ -1,9 +1,9 @@
 // Test pointer comparison with jsexport across all targets
 // RUN: mkdir -p %t
 // Preexecution mode (PREEXECUTE_MODE=true):
-// RUN: compile_for_preexec_js -O1 -o %t/j_pre %s 2>&1 && echo "Preexecution compile successful" | %FileCheck %s --check-prefix=PRE
-// RUN: compile_for_preexec_asmjs -O1 -o %t/a_pre %s 2>&1 && echo "Preexecution compile successful" | %FileCheck %s --check-prefix=PRE
-//
+// RUN: preexec_only run_if_js %valgrind compile_mode_js -o %t/j_pre %s 2>&1 | %FileCheck %s 
+// RUN: preexec_only run_if_asmjs %valgrind compile_mode_asmjs -o %t/a_pre %s 2>&1 | %FileCheck %s
+// 
 // Regular mode (PREEXECUTE_MODE=false):
 // RUN: compile_for_wasm -O1 -o %t/w %s
 // RUN: compile_for_js -O1 -o %t/j %s
@@ -16,8 +16,9 @@
 // RUN: run_if_wasm %node %t/w 2>&1
 // RUN: run_if_js %node %t/j 2>&1
 // RUN: run_if_asmjs %node %t/a 2>&1
-//
-// PRE: Preexecution compile successful
+
+//CHECK: Compare jsexported pointers 1/2 SUCCESS
+//CHECK: Compare jsexported pointers 2/2 SUCCESS
 
 //===---------------------------------------------------------------------===//
 //	Copyright 2022 Leaning Technologies
@@ -81,7 +82,6 @@ bool Foo::cmp(Bar* b)
 	Foo* f2 = client::jsFunc(&b->f[2]);
 	return f1 == f2;
 }
-
 
 int main()
 {
