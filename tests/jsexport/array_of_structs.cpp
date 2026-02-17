@@ -103,10 +103,10 @@ int main()
 
 	for (int i=0; i<N-1; i++){
 		if (getNext(&structs[i]) == &structs[i+1])
-			agnosticPrintString("getNext(i-th) == (i+1)-th");
+			assertPrint("getNext(i-th) == (i+1)-th");
 	}
 	if (getNext(&structs[N-1]) == &structs[N-1])
-		agnosticPrintString("getNext(last) == last");
+		assertPrint("getNext(last) == last");
 
 	// CHECK-REGULAR: getNext(i-th) == (i+1)-th
 	// CHECK-REGULAR: getNext(i-th) == (i+1)-th
@@ -122,10 +122,10 @@ int main()
 	OrderedStruct* local = new OrderedStruct();
 	for (int i=0; i<N; i++){
 		if (getStruct(i) != local)
-			agnosticPrintString("local != &struct[?]");
+			assertPrint("local != &struct[?]");
 	}
 	if (getNext(getNext(local)) == local)
-		agnosticPrintString("getNext fixed point");
+		assertPrint("getNext fixed point");
 
 	// CHECK-REGULAR: local != &struct[?]
 	// CHECK-REGULAR: local != &struct[?]
@@ -141,7 +141,7 @@ int main()
 
 	for (int i=0, j=0; i<N; i++, j=(j+7)%N)
 		if (getStruct(i<j?i:j) == getSmaller(getStruct(i), getStruct(j)))
-			agnosticPrintString("ordering");
+			assertPrint("ordering");
 
 	// CHECK-REGULAR: ordering
 	// CHECK-REGULAR: ordering

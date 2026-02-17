@@ -29,7 +29,7 @@ void webMain()
 	u* blData = new u();
 	blData->i = 0x41400000;
 	assertPrint("Pointer kind on union 1/2:", blData->f);
-	// CHECK: Pointer kind on union 1/2: 12.000000000000000000
+	// CHECK: Pointer kind on union 1/2: 12.0000000000
 	assertPrint("Pointer kind on union 2/2:", (__builtin_cheerp_pointer_kind(blData) == 3u)); // BYTE_LAYOUT = 3u
 	// CHECK: Pointer kind on union 2/2: 1
 	delete blData;
