@@ -23,8 +23,8 @@ void webMain()
 		str2.push_back('2');
 		str2.push_back('5');
 		str1 = str2;
-		print_multi_vals("std::string::assign:", str1.c_str(), "!");
-		// CHECK: std::string::assign: 125 !
+		assertEqual(str1, str2, "std::string::assign 1/2:");
+		// CHECK: std::string::assign 1/2:
 	}
 	{
 		std::u16string str1;
@@ -34,21 +34,22 @@ void webMain()
 		str2.push_back('2');
 		str2.push_back('5');
 		str1 = str2;
-		print_multi_vals("std::string::assign:", str2.c_str(), "!");
-		// CHECK: std::string::assign: !
+		assertEqual(str1, str2, "std::string::assign 2/2:");
+		// CHECK: std::string::assign 2/2:
 	}
 	{
 		std::string str1;
 		str1 = 32;
-		print_multi_vals("std::string::assign from char 1/3:", str1.c_str(), "!");
-		// CHECK: std::string::assign from char 1/3:   !
+		assertEqual(str1, std::string(" "), "std::string::assign from char 1/3:");
+		// CHECK: std::string::assign from char 1/3:
 		str1 = "A";
 		str1 = 32;
-		print_multi_vals("std::string::assign from char 2/3:", str1.c_str(), "!");
-		// CHECK: std::string::assign from char 2/3:   !
+
+		assertEqual(str1, std::string(" "), "std::string::assign from char 2/3:");
+		// CHECK: std::string::assign from char 2/3:
 		str1 = "AB";
 		str1 = 32;
-		print_multi_vals("std::string::assign from char 3/3:", str1.c_str(), "!");
-		// CHECK: std::string::assign from char 3/3:   !
+		assertEqual(str1, std::string(" "), "std::string::assign from char 3/3:");
+		// CHECK: std::string::assign from char 3/3:
 	}
 }

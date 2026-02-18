@@ -13,8 +13,8 @@
 
 // testing es6
 // RUN: regular_only run_if_wasm compile_mode_wasm -pthread -cheerp-make-module=es6 -o %t/es6.mjs %s 2>&1
-// RUN: regular_only run_if_wasm python3 %S/../helpers/create_driver.py %t/es6.mjs %S/thread_setup.testing.js %t/es6_driver.js --module=es6 --pthread
-// RUN: regular_only run_if_wasm %node %t/es6_driver.js 2>&1 | %FileCheck %s
+// RUN: regular_only run_if_wasm python3 %S/../helpers/create_driver.py %t/es6.mjs %S/thread_setup.testing.js %t/es6_driver.mjs --module=es6 --pthread
+// RUN: regular_only run_if_wasm %node %t/es6_driver.mjs 2>&1 | %FileCheck %s
 
 // testing closure
 // RUN: regular_only run_if_wasm compile_mode_wasm -pthread -cheerp-make-module=closure -o %t/closure %s 2>&1

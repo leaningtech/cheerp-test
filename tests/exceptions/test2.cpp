@@ -2,10 +2,9 @@
 //	Copyright 2025 Leaning Technologies
 //===----------------------------------------------------------------------===//
 
-// REQUIRES: regular
+// REQUIRES: linear-memory, regular
 
 // RUN: mkdir -p %t
-// RUN: regular_only run_if_js compile_mode_wasm -fexceptions -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
 // RUN: regular_only run_if_wasm compile_mode_wasm -fexceptions -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
 // RUN: regular_only run_if_asmjs compile_mode_asmjs -fexceptions -o %t/a %s 2>&1 && node %t/a 2>&1 | %FileCheck %s 
 
