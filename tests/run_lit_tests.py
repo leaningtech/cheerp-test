@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
+import sys
 from optparse import OptionParser
 
 usage = "usage: %prog [options] [test_paths...]"
@@ -30,11 +31,11 @@ parser.add_option("--print-stats", dest="print_stats", help="Print a summary of 
 parser.add_option("--time", dest="time_tests", help="Print compilation time and run time for each test", action="store_true", default=False)
 (option, args) = parser.parse_args()
 
-def run_determinism_tests(level = 0, probability=0.1):
-    print("Running Determinism tests")
-    print(f"level =", level)
-    print(f"probability =", probability)
-    subprocess.run(["python3", "cheerp-test/stable/helpers/determenism_wrapper.py"])
+# def run_determinism_tests(level = 0, probability=0.1):
+#     print("Running Determinism tests")
+#     print(f"level =", level)
+#     print(f"probability =", probability)
+#     subprocess.run(["python3", "cheerp-test/stable/helpers/determinism_wrapper.py"])
 
 if __name__ == "__main__":
     mode = []
@@ -42,6 +43,7 @@ if __name__ == "__main__":
     extra_flags = []
     # Use args as test paths, default to current directory if none provided
     test_paths = args if len(args) > 0 else ['.']
+    exit_code = 0
     
     opt_level = f"O{option.optlevel}"
 
@@ -52,7 +54,7 @@ if __name__ == "__main__":
             mode.append("wasm")
         if (option.asmjs):
             mode.append("asmjs")
-        if (option.genericjs):
+        if (option.genericjs):  
             mode.append("genericjs")
         if (option.preexecute):
             mode.append("preexecute")
@@ -97,7 +99,10 @@ if __name__ == "__main__":
         command = "lit -vv --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=j " + test_args
         if option.print_cmd:
             print(f"Command: {command}")
-        subprocess.run(command, shell=True)
+        result = subprocess.run(command, shell=True)
+        if result.returncode != 0:
+            print("Preexecute tests failed")
+            exit_code = result.returncode
 
     if ("preexecute-asmjs" in mode):
         # run preexecute-asmjs tests
@@ -106,7 +111,10 @@ if __name__ == "__main__":
         command = "lit -vv --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=a " + test_args
         if option.print_cmd:
             print(f"Command: {command}")
-        subprocess.run(command, shell=True)
+        result = subprocess.run(command, shell=True)
+        if result.returncode != 0:
+            print("Preexecute-asmjs tests failed")
+            exit_code = result.returncode
 
     if ("determinism" in mode):
         print("Running Determinism tests")
@@ -114,7 +122,10 @@ if __name__ == "__main__":
         print(f"determinism_probability: {option.determinism_probability}")
         mode.pop(mode.index("determinism"))
         level = option.determinism_level
-        exec("./helpers/determenism_wrapper.py", {'level': option.determinism, 'probability': option.determinism_probability})
+        result = subprocess.run(["python3", "./helpers/determinism_wrapper.py", f"--level={option.determinism}", f"--probability={option.determinism_probability}"], capture_output=True, text=True)
+        if result.returncode != 0:
+            print("Determinism tests failed")
+            exit_code = result.returncode
     
     # Run tests for remaining modes
     if mode:
@@ -155,4 +166,8 @@ if __name__ == "__main__":
         
         if option.print_cmd:
             print(f"Command: {command}\n")
-        subprocess.run(command, shell=True)
+        result = subprocess.run(command, shell=True)
+        if result.returncode != 0:
+            exit_code = result.returncode
+
+    sys.exit(exit_code)
