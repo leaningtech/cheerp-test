@@ -31,7 +31,6 @@ void webMain()
 	B b { new A() };
 	func(&b.a);
 	A* volatile a2 = b.a;
-	assertEqual<A *>((A *)a2, (A *)nullptr, "Pointers to structs in structs");
-	//CHECK: Pointers to structs in structs : SUCCESS
+	assertEqual<A *>((A *)a2, (A *)nullptr, "Pointers to structs in structs: SUCCESS");
+	//CHECK: Pointers to structs in structs: SUCCESS
 }
-

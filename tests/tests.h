@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <type_traits>
+#include <cctype>
 #include <cheerp/types.h>
 #include <cheerp/client.h>
 
@@ -274,16 +275,33 @@ void assertUnequal(const char *value, const char *expected, const char* msg)
 }
 
 template<class T>
-void assertEqual(const T value, const T expected, const char* msg)
+void assertEqual(const T &value, const T &expected, const char* msg)
 {
-	if (value == expected){
-		if (value)
-			__preexecute_print_case(msg, value);
-		else
-			__preexecute_print_case(msg, ": SUCCESS");
-	}
-	else{
+	if (!(value == expected)){
 		__preexecute_print_case("FAILURE");
+		return;
+	}
+
+	// Preserve the historical behavior:
+	// - pointers: when equal and null -> print "SUCCESS", otherwise print the value
+	// - integral/enum/fp: when equal and zero -> print "SUCCESS", otherwise print the value
+	// - other types (e.g. std::string): print the message (and value if supported)
+	if constexpr (std::is_pointer_v<T>) {
+		if (expected == nullptr)
+			__preexecute_print_case(msg, "SUCCESS");
+		else
+			__preexecute_print_case(msg, value);
+	}
+	else if constexpr (std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_enum_v<T>) {
+		if (expected == static_cast<T>(0))
+			__preexecute_print_case(msg, "SUCCESS");
+		else
+			__preexecute_print_case(msg, value);
+	}
+	else {
+		// For non-scalar types we don't have a stable, portable printing format.
+		// In regular mode the value will typically be ignored by the formatter.
+		__preexecute_print_case(msg, value);
 	}
 }
 
