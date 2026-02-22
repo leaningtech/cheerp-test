@@ -67,6 +67,7 @@ if __name__ == "__main__":
         mode = ["wasm", "asmjs", "genericjs"]
 
     if (option.valgrind):
+        cheerp_flags.append("-valgrind")
         extra_flags.append("--valgrind") 
 
     if (option.pretty_code):
@@ -74,7 +75,7 @@ if __name__ == "__main__":
     if (option.no_lto):
         cheerp_flags.append("-cheerp-no-lto")
     if (option.test_asan):
-        cheerp_flags.append("-fsanitize=address")
+        cheerp_flags.append("-asan")
     if (option.himem):
         cheerp_flags.append("-cheerp-himem")
     if (option.typescript):
@@ -151,11 +152,11 @@ if __name__ == "__main__":
             flags_str = " ".join(cheerp_flags)
             lit_params.append(f"--param CHEERP_FLAGS='{flags_str}'")
         
-        if option.valgrind:
-            lit_params.append("--param CHEERP_FLAGS='-valgrind'")
+        # if option.valgrind:
+        #     lit_params.append("--param CHEERP_FLAGS='-valgrind'")
         
-        if option.test_asan:
-            lit_params.append("--param CHEERP_FLAGS='-asan'")
+        # if option.test_asan:
+        #     lit_params.append("--param CHEERP_FLAGS='-asan'")
         
         lit_options = []
         lit_options.append("-vv")
