@@ -281,11 +281,6 @@ void assertEqual(const T &value, const T &expected, const char* msg)
 		__preexecute_print_case("FAILURE");
 		return;
 	}
-
-	// Preserve the historical behavior:
-	// - pointers: when equal and null -> print "SUCCESS", otherwise print the value
-	// - integral/enum/fp: when equal and zero -> print "SUCCESS", otherwise print the value
-	// - other types (e.g. std::string): print the message (and value if supported)
 	if constexpr (std::is_pointer_v<T>) {
 		if (expected == nullptr)
 			__preexecute_print_case(msg, "SUCCESS");
