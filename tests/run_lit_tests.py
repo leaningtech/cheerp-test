@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import subprocess
 import sys
 from optparse import OptionParser
@@ -20,6 +21,7 @@ parser.add_option("--valgrind", dest="valgrind", help="Run with valgrind activat
 parser.add_option("--preexecute", dest="preexecute", help="Run the tests inside PreExecuter", action="store_true", default=False)
 parser.add_option("--determinism", dest="determinism", help="Select the level of testing devoted to uncover non-deterministic behaviour", action="store", type="int", default=0)
 parser.add_option("--determinism-probability", dest="determinism_probability", help="Select the chance a given test is tested for determinism", action="store", type="float", default=0.1)
+parser.add_option("--determinism-runs", dest="runs", help="Select the number of runs to compare for determinism testing", action="store", type="int", default=3)
 parser.add_option("--preexecute-asmjs", dest="preexecute_asmjs", help="Run the tests inside PreExecuter in asmjs mode", action="store_true", default=False)
 parser.add_option("--all", dest="all", help="Run all the test kinds [genericjs/asmjs/wasm/preexecute]", action="store_true", default=False)
 parser.add_option("--pretty-code", dest="pretty_code", help="Compile with -cheerp-pretty-code", action="store_true", default=False)
@@ -86,7 +88,15 @@ if __name__ == "__main__":
     print(f"Test paths: {test_paths}")
     print(f"Optimization level: -O{option.optlevel}")
     print(f"Target modes: {mode}")
+    effective_jobs = option.jobs
+    if option.test_asan:
+        effective_jobs = min(option.jobs, 2)
+        if effective_jobs != option.jobs:
+            print(f"ASan testing detected, limiting jobs to {effective_jobs} to reduce memory usage")
+
     print(f"Jobs: {option.jobs}")
+  
+    
     if cheerp_flags:
         print(f"Cheerp flags: {cheerp_flags}")
     if extra_flags:
@@ -120,13 +130,32 @@ if __name__ == "__main__":
     if ("determinism" in mode):
         print("Running Determinism tests")
         print(f"determinism: {option.determinism}")
+        print(f"determinism_runs: {option.runs}")
         print(f"determinism_probability: {option.determinism_probability}")
         mode.pop(mode.index("determinism"))
-        level = option.determinism_level
-        result = subprocess.run(["python3", "./helpers/determinism_wrapper.py", f"--level={option.determinism}", f"--probability={option.determinism_probability}"], capture_output=True, text=True)
-        if result.returncode != 0:
-            print("Determinism tests failed")
-            exit_code = result.returncode
+        level = option.determinism
+        
+        # Build command based on whether we have specific files or directories
+        cmd = ["python3", "./helpers/determinism_wrapper.py", 
+               f"--level={option.determinism}", 
+               f"--runs={option.runs}", 
+               f"--probability={option.determinism_probability}"]
+        
+        # Check if test_paths contains specific files or directories
+        first_path = test_paths[0] if test_paths else '.'
+        if os.path.isfile(first_path):
+            # Run tests for each specified file
+            for test_file in test_paths:
+                if os.path.isfile(test_file):
+                    file_result = subprocess.run(cmd + [test_file], capture_output=False, text=True)
+                    if file_result.returncode != 0:
+                        exit_code = file_result.returncode
+        else:
+            # Run tests for directory/suite
+            result = subprocess.run(cmd + [f"--suite={first_path}"], capture_output=False, text=True)
+            if result.returncode != 0:
+                print("Determinism tests failed")
+                exit_code = result.returncode
     
     # Run tests for remaining modes
     if mode:
@@ -151,17 +180,11 @@ if __name__ == "__main__":
         if cheerp_flags:
             flags_str = " ".join(cheerp_flags)
             lit_params.append(f"--param CHEERP_FLAGS='{flags_str}'")
-        
-        # if option.valgrind:
-        #     lit_params.append("--param CHEERP_FLAGS='-valgrind'")
-        
-        # if option.test_asan:
-        #     lit_params.append("--param CHEERP_FLAGS='-asan'")
-        
+
         lit_options = []
         lit_options.append("-vv")
-        if option.jobs > 1:
-            lit_options.append(f"-j{option.jobs}")
+        if effective_jobs > 1: 
+            lit_options.append(f"-j{effective_jobs}")
         
         command = f"lit {' '.join(lit_options)} {' '.join(lit_params)} {test_args}"
         
