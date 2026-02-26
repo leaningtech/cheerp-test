@@ -169,7 +169,8 @@ void print_multi_vals(const char *msg, T first, Args... rest){
 #endif // PRE_EXECUTE_TEST
 
 // GenericJS-only functions for client::String support
-#ifdef __CHEERP_CLIENT__
+// NOTE: __CHEERP_CLIENT__ is not defined by current toolchains; __CHEERP__ is.
+#ifdef __CHEERP__
 template<typename T>
 [[cheerp::genericjs]]
 client::String *format_value(client::String *base, T value){
@@ -210,7 +211,7 @@ void assertPrint(const char* msg, client::String* value)
 	buffer = format_value(buffer, value);
 	cheerp::console_log(buffer);
 }
-#endif // __CHEERP_CLIENT__
+#endif // __CHEERP__
 
 // Universal assertPrint functions – thin wrappers around __preexecute_print_case
 inline void assertPrint(const char* msg)
