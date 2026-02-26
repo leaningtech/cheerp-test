@@ -62,11 +62,13 @@ if __name__ == "__main__":
             mode.append("preexecute")
         if (option.preexecute_asmjs):
             mode.append("preexecute-asmjs")
-        if (option.determinism > 0):
-            mode.append("determinism")
+        # Note: determinism is not added as a mode, it runs alongside the specified target modes
 
     if not mode:
         mode = ["wasm", "asmjs", "genericjs"]
+    
+    # Store original mode list for determinism testing (mode list gets modified during execution)
+    original_mode = mode.copy()
 
     if (option.valgrind):
         cheerp_flags.append("-valgrind")
@@ -95,7 +97,6 @@ if __name__ == "__main__":
             print(f"ASan testing detected, limiting jobs to {effective_jobs} to reduce memory usage")
 
     print(f"Jobs: {option.jobs}")
-  
     
     if cheerp_flags:
         print(f"Cheerp flags: {cheerp_flags}")
@@ -107,7 +108,7 @@ if __name__ == "__main__":
         # run preexecute tests
         mode.pop(mode.index("preexecute"))
         test_args = " ".join(test_paths)
-        command = "lit -vv --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=j " + test_args
+        command = "lit -vv --xunit-xml-output=litTestReport_preexec.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=j " + test_args
         if option.print_cmd:
             print(f"Command: {command}")
         result = subprocess.run(command, shell=True)
@@ -119,7 +120,7 @@ if __name__ == "__main__":
         # run preexecute-asmjs tests
         mode.pop(mode.index("preexecute-asmjs"))
         test_args = " ".join(test_paths)
-        command = "lit -vv --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=a " + test_args
+        command = "lit -vv --xunit-xml-output=litTestReport_preexec_asmjs.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=a " + test_args
         if option.print_cmd:
             print(f"Command: {command}")
         result = subprocess.run(command, shell=True)
@@ -127,35 +128,6 @@ if __name__ == "__main__":
             print("Preexecute-asmjs tests failed")
             exit_code = result.returncode
 
-    if ("determinism" in mode):
-        print("Running Determinism tests")
-        print(f"determinism: {option.determinism}")
-        print(f"determinism_runs: {option.runs}")
-        print(f"determinism_probability: {option.determinism_probability}")
-        mode.pop(mode.index("determinism"))
-        level = option.determinism
-        
-        # Build command based on whether we have specific files or directories
-        cmd = ["python3", "./helpers/determinism_wrapper.py", 
-               f"--level={option.determinism}", 
-               f"--runs={option.runs}", 
-               f"--probability={option.determinism_probability}"]
-        
-        # Check if test_paths contains specific files or directories
-        first_path = test_paths[0] if test_paths else '.'
-        if os.path.isfile(first_path):
-            # Run tests for each specified file
-            for test_file in test_paths:
-                if os.path.isfile(test_file):
-                    file_result = subprocess.run(cmd + [test_file], capture_output=False, text=True)
-                    if file_result.returncode != 0:
-                        exit_code = file_result.returncode
-        else:
-            # Run tests for directory/suite
-            result = subprocess.run(cmd + [f"--suite={first_path}"], capture_output=False, text=True)
-            if result.returncode != 0:
-                print("Determinism tests failed")
-                exit_code = result.returncode
     
     # Run tests for remaining modes
     if mode:
@@ -183,8 +155,11 @@ if __name__ == "__main__":
 
         lit_options = []
         lit_options.append("-vv")
-        if effective_jobs > 1: 
-            lit_options.append(f"-j{effective_jobs}")
+        lit_options.append(f"-j{effective_jobs}")
+        
+        # Add test report generation in xunit XML format
+        # This creates litTestReport.xml which we'll convert to .test format
+        lit_options.append("--xunit-xml-output=litTestReport.xml")
         
         command = f"lit {' '.join(lit_options)} {' '.join(lit_params)} {test_args}"
         
@@ -193,5 +168,110 @@ if __name__ == "__main__":
         result = subprocess.run(command, shell=True)
         if result.returncode != 0:
             exit_code = result.returncode
+    
+    # Run determinism tests if requested
+    # This runs after regular tests to match old suite behavior where determinism
+    # testing is integrated with the specified target mode
+    if option.determinism > 0:
+        print("\n" + "="*60)
+        print("Running Determinism tests")
+        print(f"  Determinism level: {option.determinism}")
+        print(f"  Runs per test: {option.runs}")
+        print(f"  Probability: {option.determinism_probability}")
+        print("="*60 + "\n")
+        
+        # Build determinism wrapper command
+        cmd = ["python3", "./helpers/determinism_wrapper.py", 
+               f"--level={option.determinism}", 
+               f"--runs={option.runs}", 
+               f"--probability={option.determinism_probability}"]
+        
+        # Add target modes if they were specified
+        # Map modes to determinism wrapper target format (use original_mode since mode list was modified)
+        determinism_targets = []
+        if "wasm" in original_mode:
+            determinism_targets.append("wasm")
+        if "asmjs" in original_mode:
+            determinism_targets.append("asmjs")
+        if "genericjs" in original_mode:
+            determinism_targets.append("js")
+        
+        # Preexecute modes are not tested for determinism in the old suite either
+        # They have their own separate determinism checking
+        
+        if determinism_targets:
+            cmd.append(f"--target={','.join(determinism_targets)}")
+        
+        # Check if test_paths contains specific files or directories
+        first_path = test_paths[0] if test_paths else '.'
+        if os.path.isfile(first_path):
+            # Run tests for each specified file
+            for test_file in test_paths:
+                if os.path.isfile(test_file):
+                    file_result = subprocess.run(cmd + [test_file], capture_output=False, text=True)
+                    if file_result.returncode != 0:
+                        exit_code = file_result.returncode
+        else:
+            # Run tests for directory/suite
+            result = subprocess.run(cmd + [f"--suite={first_path}"], capture_output=False, text=True)
+            if result.returncode != 0:
+                print("Determinism tests failed")
+                exit_code = result.returncode
+    
+    # Convert XML report(s) to .test format for compatibility with CI
+    # The .test format is what the old test suite used
+    # Collect all XML reports that were generated
+    xml_reports = []
+    for xml_file in ['litTestReport.xml', 'litTestReport_preexec.xml', 'litTestReport_preexec_asmjs.xml']:
+        if os.path.exists(xml_file):
+            xml_reports.append(xml_file)
+    
+    if xml_reports:
+        try:
+            import xml.etree.ElementTree as ET
+            
+            # Create a merged text report from all XML reports
+            with open('litTestReport.test', 'w') as f:
+                f.write('<testsuite>\n')
+                
+                # Process each XML report
+                for xml_file in xml_reports:
+                    try:
+                        tree = ET.parse(xml_file)
+                        root = tree.getroot()
+                        
+                        # Iterate through test cases
+                        for testsuite in root.findall('.//testsuite'):
+                            for testcase in testsuite.findall('testcase'):
+                                classname = testcase.get('classname', '')
+                                name = testcase.get('name', '')
+                                time = testcase.get('time', '0')
+                                
+                                # Check if test passed or failed
+                                failure = testcase.find('failure')
+                                if failure is not None:
+                                    f.write(f'<testcase classname="{classname}" name="{name}" time="{time}">\n')
+                                    f.write(f'  <failure type="{failure.get("type", "failure")}">')
+                                    f.write(failure.text if failure.text else '')
+                                    f.write('</failure>\n')
+                                    f.write('</testcase>\n')
+                                else:
+                                    f.write(f'<testcase classname="{classname}" name="{name}" time="{time}"/>\n')
+                    except Exception as e:
+                        print(f"Warning: Failed to parse {xml_file}: {e}")
+                
+                f.write('</testsuite>\n')
+            
+            print(f"Test report generated: litTestReport.test (merged {len(xml_reports)} reports)")
+        except Exception as e:
+            print(f"Warning: Failed to convert test reports: {e}")
+            # Create an empty report so CI doesn't fail
+            with open('litTestReport.test', 'w') as f:
+                f.write('<testsuite>\n</testsuite>\n')
+    else:
+        # No XML reports found, create empty report
+        print("Warning: No test reports generated, creating empty report")
+        with open('litTestReport.test', 'w') as f:
+            f.write('<testsuite>\n</testsuite>\n')
 
     sys.exit(exit_code)

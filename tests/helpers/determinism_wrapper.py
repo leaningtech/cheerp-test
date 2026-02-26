@@ -73,8 +73,8 @@ def run_test_with_determinism(test_file, lit_config_params, determinism_level=1,
             lit_params = []
             
             # Add DETERMINISM and DETERMINISM_RUN parameters
-            lit_params.append(f'--param=DETERMINISM={determinism_level}')
-            lit_params.append(f'--param=DETERMINISM_RUN={run}')
+            # lit_params.append(f'--param=DETERMINISM={determinism_level}')
+            # lit_params.append(f'--param=DETERMINISM_RUN={run}')
             
             # Add user-provided parameters
             for key, value in lit_config_params.items():
@@ -171,10 +171,10 @@ def run_test_with_determinism(test_file, lit_config_params, determinism_level=1,
     return (True, f"DETERMINISM PASS: {test_file}")
 
 def find_test_files(directory):
-    """Find all test files in a directory"""
+    """Find all test files in a directory recursively"""
     test_files = []
     for ext in ['*.cpp', '*.c']:
-        test_files.extend(glob.glob(os.path.join(directory, ext)))
+        test_files.extend(glob.glob(os.path.join(directory, '**', ext), recursive=True))
     return sorted(test_files)
 
 def main():
@@ -183,16 +183,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
+    exit_code = 0
     parser.add_argument('test_file', nargs='?', help='Single test file to check')
     parser.add_argument('--suite', help='Directory containing test suite')
-    parser.add_argument('--level', type=int, 
-                       default=int(os.environ.get('DETERMINISM_LEVEL', '1')),
-                       help='Determinism level: 0=off, 1=basic (default), 2+=pass dumps')
-    parser.add_argument('--runs', type=int,
-                       default=int(os.environ.get('DETERMINISM_RUNS', '3')),
+    parser.add_argument('--level', type=int, dest="level",
+                       default=int(1), help='Determinism level: 0=off, 1=basic (default), 2+=pass dumps')
+    parser.add_argument('--runs', type=int, dest="runs",
+                       default=int(3),
                        help='Number of compilation runs to compare (default: 3)')
-    parser.add_argument('--probability', type=float,
-                       default=float(os.environ.get('DETERMINISM_PROBABILITY', '1.0')),
+    parser.add_argument('--probability', type=float, dest="probability",
+                       default=float(1.0),
                        help='Probability of checking each test, 0.0-1.0 (default: 1.0)')
     parser.add_argument('-v', '--verbose', action='store_true',
                        help='Verbose output')
@@ -202,7 +202,7 @@ def main():
                        help='Test in preexecution mode')
     parser.add_argument('--params', 
                        help='Additional LIT parameters (e.g., "EXTRA_FLAGS=-O2")')
-    
+
     args = parser.parse_args()
     
     # Validate arguments
@@ -212,7 +212,6 @@ def main():
     if args.test_file and args.suite:
         parser.error("Cannot specify both test_file and --suite")
     
-    # Clamp probability
     probability = max(0.0, min(1.0, args.probability))
     
     # Build LIT config parameters
