@@ -90,7 +90,7 @@ if __name__ == "__main__":
     print(f"Target modes: {mode}")
     effective_jobs = option.jobs
     if option.test_asan:
-        effective_jobs = min(option.jobs, 2)
+        effective_jobs = min(option.jobs, 1)
         if effective_jobs != option.jobs:
             print(f"ASan testing detected, limiting jobs to {effective_jobs} to reduce memory usage")
 
