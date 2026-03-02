@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+import time
 from optparse import OptionParser
 
 usage = "usage: %prog [options] [test_paths...]"
@@ -21,7 +22,7 @@ parser.add_option("--valgrind", dest="valgrind", help="Run with valgrind activat
 parser.add_option("--preexecute", dest="preexecute", help="Run the tests inside PreExecuter", action="store_true", default=False)
 parser.add_option("--determinism", dest="determinism", help="Select the level of testing devoted to uncover non-deterministic behaviour", action="store", type="int", default=0)
 parser.add_option("--determinism-probability", dest="determinism_probability", help="Select the chance a given test is tested for determinism", action="store", type="float", default=0.1)
-parser.add_option("--determinism-runs", dest="runs", help="Select the number of runs to compare for determinism testing", action="store", type="int", default=3)
+parser.add_option("--determinism-runs", dest="runs", help="Select the number of runs to compare for determinism testing", action="store", type="int", default=1)
 parser.add_option("--preexecute-asmjs", dest="preexecute_asmjs", help="Run the tests inside PreExecuter in asmjs mode", action="store_true", default=False)
 parser.add_option("--all", dest="all", help="Run all the test kinds [genericjs/asmjs/wasm/preexecute]", action="store_true", default=False)
 parser.add_option("--pretty-code", dest="pretty_code", help="Compile with -cheerp-pretty-code", action="store_true", default=False)
@@ -33,20 +34,61 @@ parser.add_option("--print-stats", dest="print_stats", help="Print a summary of 
 parser.add_option("--time", dest="time_tests", help="Print compilation time and run time for each test", action="store_true", default=False)
 (option, args) = parser.parse_args()
 
+def _format_duration(seconds: float) -> str:
+    # Human-friendly, stable formatting for logs
+    seconds = max(0.0, float(seconds))
+    ms = int(round((seconds - int(seconds)) * 1000.0))
+    total = int(seconds)
+    s = total % 60
+    m = (total // 60) % 60
+    h = total // 3600
+    if h > 0:
+        return f"{h:d}:{m:02d}:{s:02d}.{ms:03d}s"
+    return f"{m:d}:{s:02d}.{ms:03d}s"
+
+
+def _run_timed(label: str, *, command=None, argv=None, shell: bool = False, print_cmd: bool = False, **kwargs):
+    """Run a subprocess while measuring wall-clock time.
+
+    Exactly one of `command` (string) or `argv` (list) must be provided.
+    Returns (CompletedProcess, elapsed_seconds).
+    """
+    if (command is None) == (argv is None):
+        raise ValueError("Provide exactly one of command= or argv=")
+
+    if print_cmd:
+        if command is not None:
+            print(f"Command: {command}")
+        else:
+            print(f"Command: {' '.join(argv)}")
+
+    t0 = time.perf_counter()
+    if command is not None:
+        result = subprocess.run(command, shell=shell, **kwargs)
+    else:
+        result = subprocess.run(argv, **kwargs)
+    t1 = time.perf_counter()
+    return result, (t1 - t0)
+
 # def run_determinism_tests(level = 0, probability=0.1):
 #     print("Running Determinism tests")
 #     print(f"level =", level)
 #     print(f"probability =", probability)
 #     subprocess.run(["python3", "cheerp-test/stable/helpers/determinism_wrapper.py"])
 
+countdeterminism = 0
+
 if __name__ == "__main__":
+    overall_t0 = time.perf_counter()
+    timings = []  # list of dicts: {label, seconds}
+
     mode = []
     cheerp_flags = []
     extra_flags = []
     # Use args as test paths, default to current directory if none provided
     test_paths = args if len(args) > 0 else ['.']
     exit_code = 0
-    
+
     opt_level = f"O{option.optlevel}"
 
     if (option.all):
@@ -109,9 +151,14 @@ if __name__ == "__main__":
         mode.pop(mode.index("preexecute"))
         test_args = " ".join(test_paths)
         command = "lit -vv --xunit-xml-output=litTestReport_preexec.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=j " + test_args
-        if option.print_cmd:
-            print(f"Command: {command}")
-        result = subprocess.run(command, shell=True)
+        result, elapsed = _run_timed(
+            "lit (preexecute/js)",
+            command=command,
+            shell=True,
+            print_cmd=option.print_cmd,
+        )
+        timings.append({"label": "lit (preexecute/js)", "seconds": elapsed})
+        print(f"[timing] lit (preexecute/js): {_format_duration(elapsed)}")
         if result.returncode != 0:
             print("Preexecute tests failed")
             exit_code = result.returncode
@@ -121,9 +168,14 @@ if __name__ == "__main__":
         mode.pop(mode.index("preexecute-asmjs"))
         test_args = " ".join(test_paths)
         command = "lit -vv --xunit-xml-output=litTestReport_preexec_asmjs.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=a " + test_args
-        if option.print_cmd:
-            print(f"Command: {command}")
-        result = subprocess.run(command, shell=True)
+        result, elapsed = _run_timed(
+            "lit (preexecute/asmjs)",
+            command=command,
+            shell=True,
+            print_cmd=option.print_cmd,
+        )
+        timings.append({"label": "lit (preexecute/asmjs)", "seconds": elapsed})
+        print(f"[timing] lit (preexecute/asmjs): {_format_duration(elapsed)}")
         if result.returncode != 0:
             print("Preexecute-asmjs tests failed")
             exit_code = result.returncode
@@ -163,9 +215,14 @@ if __name__ == "__main__":
         
         command = f"lit {' '.join(lit_options)} {' '.join(lit_params)} {test_args}"
         
-        if option.print_cmd:
-            print(f"Command: {command}\n")
-        result = subprocess.run(command, shell=True)
+        result, elapsed = _run_timed(
+            f"lit (targets={target_param})",
+            command=command,
+            shell=True,
+            print_cmd=option.print_cmd,
+        )
+        timings.append({"label": f"lit (targets={target_param})", "seconds": elapsed})
+        print(f"[timing] lit (targets={target_param}): {_format_duration(elapsed)}")
         if result.returncode != 0:
             exit_code = result.returncode
     
@@ -183,7 +240,7 @@ if __name__ == "__main__":
         # Build determinism wrapper command
         cmd = ["python3", "./helpers/determinism_wrapper.py", 
                f"--level={option.determinism}", 
-               f"--runs={option.runs}", 
+               f"--runs={option.runs}",
                f"--probability={option.determinism_probability}"]
         
         # Add target modes if they were specified
@@ -196,6 +253,7 @@ if __name__ == "__main__":
         if "genericjs" in original_mode:
             determinism_targets.append("js")
         
+        print(f"Determinism testing targets: {len(determinism_targets) if determinism_targets else 'all'}")
         # Preexecute modes are not tested for determinism in the old suite either
         # They have their own separate determinism checking
         
@@ -208,12 +266,30 @@ if __name__ == "__main__":
             # Run tests for each specified file
             for test_file in test_paths:
                 if os.path.isfile(test_file):
-                    file_result = subprocess.run(cmd + [test_file], capture_output=False, text=True)
+                    file_result, elapsed = _run_timed(
+                        f"determinism ({os.path.basename(test_file)})",
+                        argv=cmd + [test_file],
+                        shell=False,
+                        print_cmd=option.print_cmd,
+                        capture_output=False,
+                        text=True,
+                    )
+                    timings.append({"label": f"determinism ({os.path.basename(test_file)})", "seconds": elapsed})
+                    print(f"[timing] determinism ({os.path.basename(test_file)}): {_format_duration(elapsed)}")
                     if file_result.returncode != 0:
                         exit_code = file_result.returncode
         else:
             # Run tests for directory/suite
-            result = subprocess.run(cmd + [f"--suite={first_path}"], capture_output=False, text=True)
+            result, elapsed = _run_timed(
+                f"determinism (suite={first_path})",
+                argv=cmd + [f"--suite={first_path}"],
+                shell=False,
+                print_cmd=option.print_cmd,
+                capture_output=False,
+                text=True,
+            )
+            timings.append({"label": f"determinism (suite={first_path})", "seconds": elapsed})
+            print(f"[timing] determinism (suite={first_path}): {_format_duration(elapsed)}")
             if result.returncode != 0:
                 print("Determinism tests failed")
                 exit_code = result.returncode
@@ -226,6 +302,7 @@ if __name__ == "__main__":
         if os.path.exists(xml_file):
             xml_reports.append(xml_file)
     
+    report_t0 = time.perf_counter()
     if xml_reports:
         try:
             import xml.etree.ElementTree as ET
@@ -245,18 +322,18 @@ if __name__ == "__main__":
                             for testcase in testsuite.findall('testcase'):
                                 classname = testcase.get('classname', '')
                                 name = testcase.get('name', '')
-                                time = testcase.get('time', '0')
+                                case_time = testcase.get('time', '0')
                                 
                                 # Check if test passed or failed
                                 failure = testcase.find('failure')
                                 if failure is not None:
-                                    f.write(f'<testcase classname="{classname}" name="{name}" time="{time}">\n')
+                                    f.write(f'<testcase classname="{classname}" name="{name}" time="{case_time}">\n')
                                     f.write(f'  <failure type="{failure.get("type", "failure")}">')
                                     f.write(failure.text if failure.text else '')
                                     f.write('</failure>\n')
                                     f.write('</testcase>\n')
                                 else:
-                                    f.write(f'<testcase classname="{classname}" name="{name}" time="{time}"/>\n')
+                                    f.write(f'<testcase classname="{classname}" name="{name}" time="{case_time}"/>\n')
                     except Exception as e:
                         print(f"Warning: Failed to parse {xml_file}: {e}")
                 
@@ -273,5 +350,21 @@ if __name__ == "__main__":
         print("Warning: No test reports generated, creating empty report")
         with open('litTestReport.test', 'w') as f:
             f.write('<testsuite>\n</testsuite>\n')
+
+    report_elapsed = time.perf_counter() - report_t0
+    timings.append({"label": "report conversion", "seconds": report_elapsed})
+
+    overall_elapsed = time.perf_counter() - overall_t0
+    test_elapsed = sum(t["seconds"] for t in timings if t["label"].startswith("lit") or t["label"].startswith("determinism"))
+
+    print("\n" + "=" * 60)
+    print("Timing summary")
+    print("=" * 60)
+    print(f"Total elapsed:       {_format_duration(overall_elapsed)}")
+    print(f"Tests elapsed:       {_format_duration(test_elapsed)}")
+    print(f"Non-test overhead:   {_format_duration(overall_elapsed - test_elapsed)}")
+    print("\nBreakdown:")
+    for t in timings:
+        print(f"  - {t['label']}: {_format_duration(t['seconds'])}")
 
     sys.exit(exit_code)

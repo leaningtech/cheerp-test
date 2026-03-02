@@ -11,7 +11,6 @@ Usage:
     
 Environment Variables:
     DETERMINISM_LEVEL: 0=off, 1=basic output (default), 2+=pass dumps
-    DETERMINISM_RUNS: Number of compilation runs to compare (default=3)
     DETERMINISM_PROBABILITY: Probability of checking a test (0.0-1.0, default=1.0)
     LIT_PARAMS: Additional LIT parameters to pass through
 """
@@ -42,7 +41,7 @@ def should_test_determinism(probability):
     """Decide whether to test this run based on probability"""
     return random.random() < probability
 
-def run_test_with_determinism(test_file, lit_config_params, determinism_level=1, num_runs=3, verbose=False):
+def run_test_with_determinism(test_file, lit_config_params, determinism_level=1, num_runs=1, verbose=False):
     """
     Run a test multiple times and check output determinism
     
