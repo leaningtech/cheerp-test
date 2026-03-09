@@ -45,5 +45,4 @@ int main()
 {
 	assertPrint("thread local access in genericjs constructors:", myStr.myVal);
     // CHECK: thread local access in genericjs constructors: 7
-    // assertEqual(myStr.myVal, 7, "thread local access in genericjs constructors 1/1");
 }

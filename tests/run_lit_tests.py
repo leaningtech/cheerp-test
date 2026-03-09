@@ -22,7 +22,8 @@ parser.add_option("--valgrind", dest="valgrind", help="Run with valgrind activat
 parser.add_option("--preexecute", dest="preexecute", help="Run the tests inside PreExecuter", action="store_true", default=False)
 parser.add_option("--determinism", dest="determinism", help="Select the level of testing devoted to uncover non-deterministic behaviour", action="store", type="int", default=0)
 parser.add_option("--determinism-probability", dest="determinism_probability", help="Select the chance a given test is tested for determinism", action="store", type="float", default=0.1)
-parser.add_option("--determinism-runs", dest="runs", help="Select the number of runs to compare for determinism testing", action="store", type="int", default=1)
+# parser.add_option("--determinism-wrapper", dest="determinism_wrapper", help="Select determinism checker: outputs (default), print-after, or both", action="store", type="string", default="outputs")
+parser.add_option("--determinism-exclude-dir",dest="determinism_exclude_dirs",help="Exclude directory (by name) from print-after determinism suite discovery; repeatable (e.g. --determinism-exclude-dir=threading)", action="append", default=[])
 parser.add_option("--preexecute-asmjs", dest="preexecute_asmjs", help="Run the tests inside PreExecuter in asmjs mode", action="store_true", default=False)
 parser.add_option("--all", dest="all", help="Run all the test kinds [genericjs/asmjs/wasm/preexecute]", action="store_true", default=False)
 parser.add_option("--pretty-code", dest="pretty_code", help="Compile with -cheerp-pretty-code", action="store_true", default=False)
@@ -33,7 +34,6 @@ parser.add_option("--himem", dest="himem", help="Run tests with heap start at 2G
 parser.add_option("--print-stats", dest="print_stats", help="Print a summary of test result numbers", action="store_true", default=False)
 parser.add_option("--time", dest="time_tests", help="Print compilation time and run time for each test", action="store_true", default=False)
 (option, args) = parser.parse_args()
-
 def _format_duration(seconds: float) -> str:
     # Human-friendly, stable formatting for logs
     seconds = max(0.0, float(seconds))
@@ -75,8 +75,6 @@ def _run_timed(label: str, *, command=None, argv=None, shell: bool = False, prin
 #     print(f"level =", level)
 #     print(f"probability =", probability)
 #     subprocess.run(["python3", "cheerp-test/stable/helpers/determinism_wrapper.py"])
-
-countdeterminism = 0
 
 if __name__ == "__main__":
     overall_t0 = time.perf_counter()
@@ -123,23 +121,25 @@ if __name__ == "__main__":
     if (option.test_asan):
         cheerp_flags.append("-asan")
     if (option.himem):
-        cheerp_flags.append("-cheerp-himem")
+        if (mode in ["wasm", "asmjs"]):
+            cheerp_flags.append("-cheerp-linear-stack-size=2048")
+            cheerp_flags.append("-cheerp-linear-heap-size=2112")
     if (option.typescript):
         cheerp_flags.append("-cheerp-generate-dts")
     
     # Print summary before running tests
-    print("=== Configuration Summary ===")
+    print("=== Configuration Overview ===")
     print(f"Test paths: {test_paths}")
     print(f"Optimization level: -O{option.optlevel}")
     print(f"Target modes: {mode}")
     effective_jobs = option.jobs
     if option.test_asan:
-        effective_jobs = min(option.jobs, 1)
+        effective_jobs = min(option.jobs, 2)
         if effective_jobs != option.jobs:
             print(f"ASan testing detected, limiting jobs to {effective_jobs} to reduce memory usage")
 
     print(f"Jobs: {option.jobs}")
-    
+
     if cheerp_flags:
         print(f"Cheerp flags: {cheerp_flags}")
     if extra_flags:
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         # run preexecute tests
         mode.pop(mode.index("preexecute"))
         test_args = " ".join(test_paths)
-        command = "lit -vv --xunit-xml-output=litTestReport_preexec.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=j " + test_args
+        command = "lit --xunit-xml-output=litTestReport_preexec.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=j " + " -j".join(effective_jobs) + " " + test_args
         result, elapsed = _run_timed(
             "lit (preexecute/js)",
             command=command,
@@ -167,7 +167,7 @@ if __name__ == "__main__":
         # run preexecute-asmjs tests
         mode.pop(mode.index("preexecute-asmjs"))
         test_args = " ".join(test_paths)
-        command = "lit -vv --xunit-xml-output=litTestReport_preexec_asmjs.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=a " + test_args
+        command = "lit --xunit-xml-output=litTestReport_preexec_asmjs.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=a " + " -j".join(effective_jobs) + " " + test_args
         result, elapsed = _run_timed(
             "lit (preexecute/asmjs)",
             command=command,
@@ -180,7 +180,6 @@ if __name__ == "__main__":
             print("Preexecute-asmjs tests failed")
             exit_code = result.returncode
 
-    
     # Run tests for remaining modes
     if mode:
         test_args = " ".join(test_paths)
@@ -206,7 +205,7 @@ if __name__ == "__main__":
             lit_params.append(f"--param CHEERP_FLAGS='{flags_str}'")
 
         lit_options = []
-        lit_options.append("-vv")
+        # lit_options.append("-vv")
         lit_options.append(f"-j{effective_jobs}")
         
         # Add test report generation in xunit XML format
@@ -229,21 +228,13 @@ if __name__ == "__main__":
     # Run determinism tests if requested
     # This runs after regular tests to match old suite behavior where determinism
     # testing is integrated with the specified target mode
-    if option.determinism > 0:
+    if option.determinism:
         print("\n" + "="*60)
         print("Running Determinism tests")
-        print(f"  Determinism level: {option.determinism}")
-        print(f"  Runs per test: {option.runs}")
+        print(f"  Runs per test: {option.determinism}")
         print(f"  Probability: {option.determinism_probability}")
         print("="*60 + "\n")
-        
-        # Build determinism wrapper command
-        cmd = ["python3", "./helpers/determinism_wrapper.py", 
-               f"--level={option.determinism}", 
-               f"--runs={option.runs}",
-               f"--probability={option.determinism_probability}"]
-        
-        # Add target modes if they were specified
+
         # Map modes to determinism wrapper target format (use original_mode since mode list was modified)
         determinism_targets = []
         if "wasm" in original_mode:
@@ -252,50 +243,84 @@ if __name__ == "__main__":
             determinism_targets.append("asmjs")
         if "genericjs" in original_mode:
             determinism_targets.append("js")
-        
+
         print(f"Determinism testing targets: {len(determinism_targets) if determinism_targets else 'all'}")
-        # Preexecute modes are not tested for determinism in the old suite either
-        # They have their own separate determinism checking
-        
-        if determinism_targets:
-            cmd.append(f"--target={','.join(determinism_targets)}")
-        
-        # Check if test_paths contains specific files or directories
-        first_path = test_paths[0] if test_paths else '.'
-        if os.path.isfile(first_path):
-            # Run tests for each specified file
-            for test_file in test_paths:
-                if os.path.isfile(test_file):
+
+        # Compiler-only flags for determinism wrappers (strip pseudo-flags consumed by lit.cfg)
+        cheerp_flags_compiler_only = [f for f in cheerp_flags if f not in ("-valgrind", "-asan")]
+        cheerp_flags_compiler_str = " ".join(cheerp_flags_compiler_only)
+
+        # Helper to run a determinism wrapper against either a suite dir or explicit files
+        def run_wrapper(wrapper_label: str, base_cmd: list[str], current_exit_code: int) -> int:
+            first_path = test_paths[0] if test_paths else "."
+            if os.path.isfile(first_path):
+                for test_file in test_paths:
+                    if not os.path.isfile(test_file):
+                        continue
                     file_result, elapsed = _run_timed(
-                        f"determinism ({os.path.basename(test_file)})",
-                        argv=cmd + [test_file],
+                        f"{wrapper_label} ({os.path.basename(test_file)})",
+                        argv=base_cmd + [test_file],
                         shell=False,
                         print_cmd=option.print_cmd,
                         capture_output=False,
                         text=True,
                     )
-                    timings.append({"label": f"determinism ({os.path.basename(test_file)})", "seconds": elapsed})
-                    print(f"[timing] determinism ({os.path.basename(test_file)}): {_format_duration(elapsed)}")
+                    timings.append({"label": f"{wrapper_label} ({os.path.basename(test_file)})", "seconds": elapsed})
+                    print(f"[timing] {wrapper_label} ({os.path.basename(test_file)}): {_format_duration(elapsed)}")
                     if file_result.returncode != 0:
-                        exit_code = file_result.returncode
-        else:
-            # Run tests for directory/suite
-            result, elapsed = _run_timed(
-                f"determinism (suite={first_path})",
-                argv=cmd + [f"--suite={first_path}"],
-                shell=False,
-                print_cmd=option.print_cmd,
-                capture_output=False,
-                text=True,
-            )
-            timings.append({"label": f"determinism (suite={first_path})", "seconds": elapsed})
-            print(f"[timing] determinism (suite={first_path}): {_format_duration(elapsed)}")
-            if result.returncode != 0:
-                print("Determinism tests failed")
-                exit_code = result.returncode
+                        current_exit_code = file_result.returncode
+            else:
+                result, elapsed = _run_timed(
+                    f"{wrapper_label} (suite={first_path})",
+                    argv=base_cmd + [f"--suite={first_path}"],
+                    shell=False,
+                    print_cmd=option.print_cmd,
+                    capture_output=False,
+                    text=True,
+                )
+                timings.append({"label": f"{wrapper_label} (suite={first_path})", "seconds": elapsed})
+                print(f"[timing] {wrapper_label} (suite={first_path}): {_format_duration(elapsed)}")
+                if result.returncode != 0:
+                    print(f"{wrapper_label} tests failed")
+                    current_exit_code = result.returncode
+            return current_exit_code
+
+        cmd_outputs = [
+            "python3",
+            "./helpers/determinism_wrapper.py",
+            f"--runs={option.determinism}",
+            # f"--runs={option.runs}",
+            f"--probability={option.determinism_probability}",
+        ]
+        if determinism_targets:
+            cmd_outputs.append(f"--target={','.join(determinism_targets)}")
+        exit_code = run_wrapper("determinism(outputs)", cmd_outputs, exit_code)
+
+        # New print-after based wrapper
+    #     if wrapper_mode in ("print-after", "both"):
+    #         cmd_print_after = [
+    #             "python3",
+    #             "./helpers/determinism_wrapper_print_after.py",
+    #             f"--level={option.determinism}",
+    #             f"--runs={option.runs}",
+    #             f"--probability={option.determinism_probability}",
+    #             f"--jobs={effective_jobs}",
+    #             f"--opt-level=-O{option.optlevel}",
+    #         ]
+    #         if cheerp_flags_compiler_str:
+    #             cmd_print_after += ["--cheerp-flags", cheerp_flags_compiler_str]
+    #         if option.test_asan:
+    #             cmd_print_after.append("--asan")
+    #         if determinism_targets:
+    #             cmd_print_after.append(f"--target={','.join(determinism_targets)}")
+    #         for d in (option.determinism_exclude_dirs or []):
+    #             if d:
+    #                 cmd_print_after.append(f"--exclude-dir={d}")
+    #         if option.print_cmd:
+    #             cmd_print_after.append("--print-cmd")
+    #         exit_code = run_wrapper("determinism(print-after)", cmd_print_after, exit_code)
     
-    # Convert XML report(s) to .test format for compatibility with CI
-    # The .test format is what the old test suite used
+    # # The .test format is what the old test suite used
     # Collect all XML reports that were generated
     xml_reports = []
     for xml_file in ['litTestReport.xml', 'litTestReport_preexec.xml', 'litTestReport_preexec_asmjs.xml']:
