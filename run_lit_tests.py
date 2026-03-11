@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
 import os
+import shlex
+import shutil
 import subprocess
 import sys
 import time
+import xml.etree.ElementTree as ET
+from pathlib import Path
 from optparse import OptionParser
 
 usage = "usage: %prog [options] [test_paths...]"
@@ -22,7 +26,7 @@ parser.add_option("--valgrind", dest="valgrind", help="Run with valgrind activat
 parser.add_option("--preexecute", dest="preexecute", help="Run the tests inside PreExecuter", action="store_true", default=False)
 parser.add_option("--determinism", dest="determinism", help="Select the level of testing devoted to uncover non-deterministic behaviour", action="store", type="int", default=0)
 parser.add_option("--determinism-probability", dest="determinism_probability", help="Select the chance a given test is tested for determinism", action="store", type="float", default=0.1)
-# parser.add_option("--determinism-wrapper", dest="determinism_wrapper", help="Select determinism checker: outputs (default), print-after, or both", action="store", type="string", default="outputs")
+parser.add_option("--determinism-only", dest="determinism_only", help="set to exclude non determinism tests(mainly added for use in ci)", action="store_true", default=False)
 parser.add_option("--determinism-exclude-dir",dest="determinism_exclude_dirs",help="Exclude directory (by name) from print-after determinism suite discovery; repeatable (e.g. --determinism-exclude-dir=threading)", action="append", default=[])
 parser.add_option("--preexecute-asmjs", dest="preexecute_asmjs", help="Run the tests inside PreExecuter in asmjs mode", action="store_true", default=False)
 parser.add_option("--all", dest="all", help="Run all the test kinds [genericjs/asmjs/wasm/preexecute]", action="store_true", default=False)
@@ -33,6 +37,8 @@ parser.add_option("--asan", dest="test_asan", help="Test using AddressSanitizer 
 parser.add_option("--himem", dest="himem", help="Run tests with heap start at 2GB", action="store_true", default=False)
 parser.add_option("--print-stats", dest="print_stats", help="Print a summary of test result numbers", action="store_true", default=False)
 parser.add_option("--time", dest="time_tests", help="Print compilation time and run time for each test", action="store_true", default=False)
+parser.add_option("--compiler", dest="compiler", help="Compiler alias/path to pass to lit (e.g. cheerp, local, /opt/cheerp2/bin/clang++)", action="store")
+parser.add_option("--cheerp-prefix", dest="cheerp_prefix", help="Cheerp install prefix to pass to lit via CHEERP_PREFIX", action="store")
 (option, args) = parser.parse_args()
 def _format_duration(seconds: float) -> str:
     # Human-friendly, stable formatting for logs
@@ -70,6 +76,73 @@ def _run_timed(label: str, *, command=None, argv=None, shell: bool = False, prin
     t1 = time.perf_counter()
     return result, (t1 - t0)
 
+
+def _copy_prefixed_outputs(tests_root: str, prefix: str, since_epoch: float) -> int:
+    """Copy generated lit Output/*.tmp artifacts to prefixed files, similar to cheerp-utils tests."""
+    root = Path(tests_root)
+    copied = 0
+
+    for tmp_dir in root.glob('**/Output/*.tmp'):
+        try:
+            if tmp_dir.stat().st_mtime < (since_epoch - 5):
+                continue
+        except FileNotFoundError:
+            continue
+
+        test_dir = tmp_dir.parent.parent
+        stem_without_tmp = tmp_dir.name[:-4] if tmp_dir.name.endswith('.tmp') else tmp_dir.name
+        test_stem = Path(stem_without_tmp).stem
+
+        for artifact in tmp_dir.iterdir():
+            if not artifact.is_file():
+                continue
+            target = test_dir / f"{prefix}_{test_stem}_{artifact.name}"
+            shutil.copy2(artifact, target)
+            copied += 1
+
+    return copied
+
+
+def _collect_testcase_stats(xml_reports):
+    stats = {
+        'total': 0,
+        'passed': 0,
+        'failed': 0,
+        'errored': 0,
+        'skipped': 0,
+    }
+    per_test_times = []
+
+    for xml_file in xml_reports:
+        try:
+            tree = ET.parse(xml_file)
+            root = tree.getroot()
+        except Exception:
+            continue
+
+        for testcase in root.findall('.//testcase'):
+            stats['total'] += 1
+            classname = testcase.get('classname', '')
+            name = testcase.get('name', '')
+            full_name = f"{classname}::{name}" if classname else name
+
+            try:
+                t = float(testcase.get('time', '0') or 0)
+            except ValueError:
+                t = 0.0
+            per_test_times.append((full_name, t))
+
+            if testcase.find('failure') is not None:
+                stats['failed'] += 1
+            elif testcase.find('error') is not None:
+                stats['errored'] += 1
+            elif testcase.find('skipped') is not None:
+                stats['skipped'] += 1
+            else:
+                stats['passed'] += 1
+
+    return stats, per_test_times
+
 # def run_determinism_tests(level = 0, probability=0.1):
 #     print("Running Determinism tests")
 #     print(f"level =", level)
@@ -78,6 +151,7 @@ def _run_timed(label: str, *, command=None, argv=None, shell: bool = False, prin
 
 if __name__ == "__main__":
     overall_t0 = time.perf_counter()
+    run_start_wall = time.time()
     timings = []  # list of dicts: {label, seconds}
 
     mode = []
@@ -88,6 +162,22 @@ if __name__ == "__main__":
     exit_code = 0
 
     opt_level = f"O{option.optlevel}"
+
+    user_lit_params = []
+    if option.compiler:
+        user_lit_params.append(f"--param COMPILER={shlex.quote(option.compiler)}")
+    if option.cheerp_prefix:
+        user_lit_params.append(f"--param CHEERP_PREFIX={shlex.quote(option.cheerp_prefix)}")
+    if option.keep_logs:
+        user_lit_params.append("--param KEEP_LOGS=1")
+    if option.prefix:
+        user_lit_params.append(f"--param OUTPUT_PREFIX={shlex.quote(option.prefix)}")
+    if option.print_stats:
+        user_lit_params.append("--param PRINT_STATS=1")
+    if option.time_tests:
+        user_lit_params.append("--param TIME_TESTS=1")
+    if option.himem:
+        user_lit_params.append("--param HIMEM=1")
 
     if (option.all):
         mode = ["wasm", "asmjs", "genericjs", "preexecute", "preexecute-asmjs"]
@@ -120,18 +210,21 @@ if __name__ == "__main__":
         cheerp_flags.append("-cheerp-no-lto")
     if (option.test_asan):
         cheerp_flags.append("-asan")
-    if (option.himem):
-        if (mode in ["wasm", "asmjs"]):
+    if option.himem:
+        if any(m in ("wasm", "asmjs") for m in mode):
             cheerp_flags.append("-cheerp-linear-stack-size=2048")
             cheerp_flags.append("-cheerp-linear-heap-size=2112")
+        else:
+            print("Warning: --himem requested but no wasm/asmjs targets are enabled; ignoring")
     if (option.typescript):
-        cheerp_flags.append("-cheerp-generate-dts")
+        cheerp_flags.append("-cheerp-make-dts")
     
     # Print summary before running tests
     print("=== Configuration Overview ===")
     print(f"Test paths: {test_paths}")
     print(f"Optimization level: -O{option.optlevel}")
     print(f"Target modes: {mode}")
+    print(f"determinism only mode: {option.determinism_only}")
     effective_jobs = option.jobs
     if option.test_asan:
         effective_jobs = min(option.jobs, 2)
@@ -144,13 +237,35 @@ if __name__ == "__main__":
         print(f"Cheerp flags: {cheerp_flags}")
     if extra_flags:
         print(f"Extra flags: {extra_flags}")
+    if option.compiler:
+        print(f"Compiler parameter: {option.compiler}")
+    if option.cheerp_prefix:
+        print(f"Cheerp prefix parameter: {option.cheerp_prefix}")
+    if option.keep_logs:
+        print("Keep logs: enabled")
+    if option.prefix:
+        print(f"Output prefix: {option.prefix}")
+    if option.print_stats:
+        print("Print stats: enabled")
+    if option.time_tests:
+        print("Per-test timing report: enabled")
     print("="*30 + "\n")
 
-    if ("preexecute" in mode):
+    if ("preexecute" in mode and not option.determinism_only):
         # run preexecute tests
         mode.pop(mode.index("preexecute"))
         test_args = " ".join(test_paths)
-        command = "lit --xunit-xml-output=litTestReport_preexec.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=j " + " -j".join(effective_jobs) + " " + test_args
+        command_parts = [
+            "lit",
+            "--xunit-xml-output=litTestReport_preexec.xml",
+            "--param OPT_LEVEL=" + opt_level,
+            "--param CHEERP_FLAGS=" + shlex.quote(" ".join(cheerp_flags)),
+            "--param PRE_EX=j",
+            *user_lit_params,
+            "-j" + str(effective_jobs),
+            test_args,
+        ]
+        command = " ".join(part for part in command_parts if part)
         result, elapsed = _run_timed(
             "lit (preexecute/js)",
             command=command,
@@ -163,11 +278,21 @@ if __name__ == "__main__":
             print("Preexecute tests failed")
             exit_code = result.returncode
 
-    if ("preexecute-asmjs" in mode):
+    if ("preexecute-asmjs" in mode and not option.determinism_only):
         # run preexecute-asmjs tests
         mode.pop(mode.index("preexecute-asmjs"))
         test_args = " ".join(test_paths)
-        command = "lit --xunit-xml-output=litTestReport_preexec_asmjs.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=a " + " -j".join(effective_jobs) + " " + test_args
+        command_parts = [
+            "lit",
+            "--xunit-xml-output=litTestReport_preexec_asmjs.xml",
+            "--param OPT_LEVEL=" + opt_level,
+            "--param CHEERP_FLAGS=" + shlex.quote(" ".join(cheerp_flags)),
+            "--param PRE_EX=a",
+            *user_lit_params,
+            "-j" + str(effective_jobs),
+            test_args,
+        ]
+        command = " ".join(part for part in command_parts if part)
         result, elapsed = _run_timed(
             "lit (preexecute/asmjs)",
             command=command,
@@ -181,7 +306,7 @@ if __name__ == "__main__":
             exit_code = result.returncode
 
     # Run tests for remaining modes
-    if mode:
+    if mode and not option.determinism_only:
         test_args = " ".join(test_paths)
         
         # Build target parameter
@@ -202,7 +327,9 @@ if __name__ == "__main__":
         
         if cheerp_flags:
             flags_str = " ".join(cheerp_flags)
-            lit_params.append(f"--param CHEERP_FLAGS='{flags_str}'")
+            lit_params.append(f"--param CHEERP_FLAGS={shlex.quote(flags_str)}")
+
+        lit_params.extend(user_lit_params)
 
         lit_options = []
         # lit_options.append("-vv")
@@ -287,39 +414,28 @@ if __name__ == "__main__":
 
         cmd_outputs = [
             "python3",
-            "./helpers/determinism_wrapper.py",
+            "./helpers/determinism_wrapper_compile_only.py",
             f"--runs={option.determinism}",
-            # f"--runs={option.runs}",
             f"--probability={option.determinism_probability}",
+            f"--jobs={effective_jobs}",
+            f"--opt-level={opt_level}",
         ]
+        if cheerp_flags_compiler_str:
+            cmd_outputs.append(f"--cheerp-flags={cheerp_flags_compiler_str}")
+        if option.test_asan:
+            cmd_outputs.append("--asan")
         if determinism_targets:
             cmd_outputs.append(f"--target={','.join(determinism_targets)}")
-        exit_code = run_wrapper("determinism(outputs)", cmd_outputs, exit_code)
-
-        # New print-after based wrapper
-    #     if wrapper_mode in ("print-after", "both"):
-    #         cmd_print_after = [
-    #             "python3",
-    #             "./helpers/determinism_wrapper_print_after.py",
-    #             f"--level={option.determinism}",
-    #             f"--runs={option.runs}",
-    #             f"--probability={option.determinism_probability}",
-    #             f"--jobs={effective_jobs}",
-    #             f"--opt-level=-O{option.optlevel}",
-    #         ]
-    #         if cheerp_flags_compiler_str:
-    #             cmd_print_after += ["--cheerp-flags", cheerp_flags_compiler_str]
-    #         if option.test_asan:
-    #             cmd_print_after.append("--asan")
-    #         if determinism_targets:
-    #             cmd_print_after.append(f"--target={','.join(determinism_targets)}")
-    #         for d in (option.determinism_exclude_dirs or []):
-    #             if d:
-    #                 cmd_print_after.append(f"--exclude-dir={d}")
-    #         if option.print_cmd:
-    #             cmd_print_after.append("--print-cmd")
-    #         exit_code = run_wrapper("determinism(print-after)", cmd_print_after, exit_code)
+        for excluded_dir in option.determinism_exclude_dirs:
+            cmd_outputs.append(f"--exclude-dir={excluded_dir}")
+        if option.print_cmd:
+            cmd_outputs.append("--print-cmd")
+        exit_code = run_wrapper("determinism(compile-hash)", cmd_outputs, exit_code)
     
+    if option.prefix:
+        copied = _copy_prefixed_outputs(os.path.dirname(__file__), option.prefix, run_start_wall)
+        print(f"Copied {copied} prefixed output artifact(s)")
+
     # # The .test format is what the old test suite used
     # Collect all XML reports that were generated
     xml_reports = []
@@ -376,15 +492,39 @@ if __name__ == "__main__":
         with open('litTestReport.test', 'w') as f:
             f.write('<testsuite>\n</testsuite>\n')
 
+    testcase_stats, per_test_times = _collect_testcase_stats(xml_reports)
+
+    if not option.keep_logs:
+        for xml_file in xml_reports:
+            try:
+                os.remove(xml_file)
+            except OSError:
+                pass
+
     report_elapsed = time.perf_counter() - report_t0
     timings.append({"label": "report conversion", "seconds": report_elapsed})
+
+    if option.print_stats:
+        print("\nTest stats")
+        print("-" * 30)
+        print(f"passed: {testcase_stats['passed']}")
+        print(f"failed: {testcase_stats['failed']}")
+        print(f"errored: {testcase_stats['errored']}")
+        print(f"skipped/unsupported: {testcase_stats['skipped']}")
+        print(f"total: {testcase_stats['total']}")
+
+    if option.time_tests and per_test_times:
+        print("\nPer-test durations")
+        print("-" * 30)
+        for test_name, sec in sorted(per_test_times, key=lambda x: x[1], reverse=True):
+            print(f"{sec:8.3f}s  {test_name}")
 
     overall_elapsed = time.perf_counter() - overall_t0
     test_elapsed = sum(t["seconds"] for t in timings if t["label"].startswith("lit") or t["label"].startswith("determinism"))
 
-    print("\n" + "=" * 60)
+    print("\n" + "*" * 60)
     print("Timing summary")
-    print("=" * 60)
+    print("*" * 60)
     print(f"Total elapsed:       {_format_duration(overall_elapsed)}")
     print(f"Tests elapsed:       {_format_duration(test_elapsed)}")
     print(f"Non-test overhead:   {_format_duration(overall_elapsed - test_elapsed)}")

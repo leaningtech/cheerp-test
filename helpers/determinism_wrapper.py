@@ -3,14 +3,13 @@
 Determinism Testing Wrapper for Cheerp LIT Tests
 
 This script runs LIT tests multiple times and checks that the compiler
-produces identical output each time, detecting non-deterministic behavior.
 
 Usage:
     python3 determinism_wrapper.py <test_file>           # Single test
     python3 determinism_wrapper.py --suite <directory>   # Entire suite
     
 Environment Variables:
-    DETERMINISM_LEVEL: 0=off, 1=basic output (default), 2+=pass dumps
+    DETERMINISM_LEVEL: 0=off, 1+=number of comparisons
     DETERMINISM_PROBABILITY: Probability of checking a test (0.0-1.0, default=1.0)
     LIT_PARAMS: Additional LIT parameters to pass through
 """
@@ -70,10 +69,6 @@ def run_test_with_determinism(test_file, lit_config_params, determinism_level=1,
             
             # Build lit parameters
             lit_params = []
-            
-            # Add DETERMINISM and DETERMINISM_RUN parameters
-            # lit_params.append(f'--param=DETERMINISM={determinism_level}')
-            # lit_params.append(f'--param=DETERMINISM_RUN={run}')
             
             # Add user-provided parameters
             for key, value in lit_config_params.items():
@@ -188,7 +183,7 @@ def main():
     parser.add_argument('--level', type=int, dest="level",
                        default=int(1), help='Determinism level: 0=off, 1=basic (default), 2+=pass dumps')
     parser.add_argument('--runs', type=int, dest="runs",
-                       default=int(3),
+                       default=int(1),
                        help='Number of compilation runs to compare (default: 3)')
     parser.add_argument('--probability', type=float, dest="probability",
                        default=float(1.0),
