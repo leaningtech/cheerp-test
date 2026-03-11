@@ -150,7 +150,7 @@ if __name__ == "__main__":
         # run preexecute tests
         mode.pop(mode.index("preexecute"))
         test_args = " ".join(test_paths)
-        command = "lit --xunit-xml-output=litTestReport_preexec.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=j " + " -j".join(effective_jobs) + " " + test_args
+        command = "lit --xunit-xml-output=litTestReport_preexec.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=j " + " -j" + str(effective_jobs) + " " + test_args
         result, elapsed = _run_timed(
             "lit (preexecute/js)",
             command=command,
@@ -167,7 +167,7 @@ if __name__ == "__main__":
         # run preexecute-asmjs tests
         mode.pop(mode.index("preexecute-asmjs"))
         test_args = " ".join(test_paths)
-        command = "lit --xunit-xml-output=litTestReport_preexec_asmjs.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=a " + " -j".join(effective_jobs) + " " + test_args
+        command = "lit --xunit-xml-output=litTestReport_preexec_asmjs.xml --param OPT_LEVEL=" + opt_level + " --param CHEERP_FLAGS='" + " ".join(cheerp_flags) + "' --param PRE_EX=a " + " -j" + str(effective_jobs) + " " + test_args
         result, elapsed = _run_timed(
             "lit (preexecute/asmjs)",
             command=command,

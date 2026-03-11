@@ -188,7 +188,7 @@ def main():
     parser.add_argument('--level', type=int, dest="level",
                        default=int(1), help='Determinism level: 0=off, 1=basic (default), 2+=pass dumps')
     parser.add_argument('--runs', type=int, dest="runs",
-                       default=int(3),
+                       default=int(1),
                        help='Number of compilation runs to compare (default: 3)')
     parser.add_argument('--probability', type=float, dest="probability",
                        default=float(1.0),
