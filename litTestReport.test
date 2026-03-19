@@ -1,0 +1,23 @@
+<testsuite>
+<testcase classname="Cheerp-testing-suite.std" name="chrono.cpp" time="7.64"/>
+<testcase classname="Cheerp-testing-suite.std" name="gettimeofday.cpp" time="7.71"/>
+<testcase classname="Cheerp-testing-suite.std" name="locale.cpp" time="7.86"/>
+<testcase classname="Cheerp-testing-suite.std" name="malloc.cpp" time="4.23"/>
+<testcase classname="Cheerp-testing-suite.std" name="mapdestruction.cpp" time="8.24"/>
+<testcase classname="Cheerp-testing-suite.std" name="memcmp.cpp" time="7.61"/>
+<testcase classname="Cheerp-testing-suite.std" name="sort.cpp" time="12.49"/>
+<testcase classname="Cheerp-testing-suite.std" name="sscanf.cpp" time="8.79"/>
+<testcase classname="Cheerp-testing-suite.std" name="stdmemfuncs.cpp" time="7.60"/>
+<testcase classname="Cheerp-testing-suite.std" name="stringassign.cpp" time="8.03"/>
+<testcase classname="Cheerp-testing-suite.std" name="stringhashing.cpp" time="2.84"/>
+<testcase classname="Cheerp-testing-suite.std" name="test1.cpp" time="7.78"/>
+<testcase classname="Cheerp-testing-suite.std" name="test2.cpp" time="7.87"/>
+<testcase classname="Cheerp-testing-suite.std" name="test3.cpp" time="7.84"/>
+<testcase classname="Cheerp-testing-suite.std" name="test4.cpp" time="14.92"/>
+<testcase classname="Cheerp-testing-suite.std" name="test5.cpp" time="7.83"/>
+<testcase classname="Cheerp-testing-suite.std" name="test6.cpp" time="7.83"/>
+<testcase classname="Cheerp-testing-suite.std" name="test7.cpp" time="8.44"/>
+<testcase classname="Cheerp-testing-suite.std" name="test8.cpp" time="8.78"/>
+<testcase classname="Cheerp-testing-suite.std" name="test9.cpp" time="7.59"/>
+<testcase classname="Cheerp-testing-suite.std" name="tostring.cpp" time="2.49"/>
+</testsuite>
