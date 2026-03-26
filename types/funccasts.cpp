@@ -2,13 +2,9 @@
 //	Copyright 2025 Leaning Technologies
 //===---------------------------------------------------------------------===//
 
-// X-FAIL: *
-
 // REQUIRES: linear-memory
 
 // RUN: mkdir -p %t
-
-// should fail for asmjs 
 
 // RUN: regular_only run_if_wasm compile_mode_wasm -cheerp-fix-wrong-func-casts -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
 // RUN: regular_only run_if_asmjs compile_mode_asmjs -cheerp-fix-wrong-func-casts -o %t/a %s 2>&1 && node %t/a 2>&1| %FileCheck %s
