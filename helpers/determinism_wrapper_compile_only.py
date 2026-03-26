@@ -48,6 +48,174 @@ def _md5_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def _md5_bytes(data: bytes) -> str:
+    return hashlib.md5(data).hexdigest()
+
+
+def _read_uleb(data: bytes, i: int) -> tuple[int, int]:
+    result = 0
+    shift = 0
+    while True:
+        if i >= len(data):
+            raise ValueError("ULEB decode out of bounds")
+        b = data[i]
+        i += 1
+        result |= (b & 0x7F) << shift
+        if (b & 0x80) == 0:
+            return result, i
+        shift += 7
+        if shift > 63:
+            raise ValueError("ULEB decode overflow")
+
+
+def _write_uleb(v: int) -> bytes:
+    if v < 0:
+        raise ValueError("ULEB value must be non-negative")
+    out = bytearray()
+    while True:
+        b = v & 0x7F
+        v >>= 7
+        if v:
+            out.append(b | 0x80)
+        else:
+            out.append(b)
+            break
+    return bytes(out)
+
+
+def _read_name_bytes(data: bytes, i: int) -> tuple[bytes, int]:
+    n, i = _read_uleb(data, i)
+    j = i + n
+    if j > len(data):
+        raise ValueError("name extends past buffer")
+    return data[i:j], j
+
+
+def _write_name_bytes(b: bytes) -> bytes:
+    return _write_uleb(len(b)) + b
+
+
+def _canonicalize_import_section(payload: bytes) -> bytes:
+    i = 0
+    count, i = _read_uleb(payload, i)
+    out = bytearray()
+    out.extend(_write_uleb(count))
+
+    for _ in range(count):
+        module_name, i = _read_name_bytes(payload, i)
+        _field_name, i = _read_name_bytes(payload, i)  # ignored intentionally
+
+        if i >= len(payload):
+            raise ValueError("import kind missing")
+        kind = payload[i]
+        i += 1
+
+        out.extend(_write_name_bytes(module_name))
+        out.extend(_write_name_bytes(b""))  # ignore symbol name for functional determinism
+        out.append(kind)
+
+        if kind == 0:  # func
+            type_idx, i = _read_uleb(payload, i)
+            out.extend(_write_uleb(type_idx))
+        elif kind == 1:  # table
+            if i >= len(payload):
+                raise ValueError("table elem type missing")
+            elem_type = payload[i]
+            i += 1
+            limits_flags, i = _read_uleb(payload, i)
+            min_lim, i = _read_uleb(payload, i)
+            out.append(elem_type)
+            out.extend(_write_uleb(limits_flags))
+            out.extend(_write_uleb(min_lim))
+            if limits_flags & 0x1:
+                max_lim, i = _read_uleb(payload, i)
+                out.extend(_write_uleb(max_lim))
+        elif kind == 2:  # memory
+            limits_flags, i = _read_uleb(payload, i)
+            min_lim, i = _read_uleb(payload, i)
+            out.extend(_write_uleb(limits_flags))
+            out.extend(_write_uleb(min_lim))
+            if limits_flags & 0x1:
+                max_lim, i = _read_uleb(payload, i)
+                out.extend(_write_uleb(max_lim))
+        elif kind == 3:  # global
+            if i + 1 >= len(payload):
+                raise ValueError("global type/mutability missing")
+            val_type = payload[i]
+            mutability = payload[i + 1]
+            i += 2
+            out.append(val_type)
+            out.append(mutability)
+        elif kind == 4:  # tag (exceptions proposal)
+            if i >= len(payload):
+                raise ValueError("tag attribute missing")
+            attr = payload[i]
+            i += 1
+            type_idx, i = _read_uleb(payload, i)
+            out.append(attr)
+            out.extend(_write_uleb(type_idx))
+        else:
+            raise ValueError(f"unsupported import kind: {kind}")
+
+    if i != len(payload):
+        raise ValueError("trailing bytes in import section")
+    return bytes(out)
+
+
+def _canonicalize_export_section(payload: bytes) -> bytes:
+    i = 0
+    count, i = _read_uleb(payload, i)
+    out = bytearray()
+    out.extend(_write_uleb(count))
+
+    for _ in range(count):
+        _name, i = _read_name_bytes(payload, i)  # ignored intentionally
+        if i >= len(payload):
+            raise ValueError("export kind missing")
+        kind = payload[i]
+        i += 1
+        idx, i = _read_uleb(payload, i)
+
+        out.extend(_write_name_bytes(b""))  # ignore symbol name for functional determinism
+        out.append(kind)
+        out.extend(_write_uleb(idx))
+
+    if i != len(payload):
+        raise ValueError("trailing bytes in export section")
+    return bytes(out)
+
+
+def _normalize_wasm_functional(data: bytes) -> bytes:
+    if len(data) < 8 or data[:4] != b"\x00asm":
+        return data
+
+    out = bytearray()
+    out.extend(data[:8])  # magic + version
+
+    i = 8
+    while i < len(data):
+        sec_id = data[i]
+        i += 1
+        sec_size, i2 = _read_uleb(data, i)
+        sec_start = i2
+        sec_end = sec_start + sec_size
+        if sec_end > len(data):
+            raise ValueError("section extends past file")
+        payload = data[sec_start:sec_end]
+
+        if sec_id == 2:
+            payload = _canonicalize_import_section(payload)
+        elif sec_id == 7:
+            payload = _canonicalize_export_section(payload)
+
+        out.append(sec_id)
+        out.extend(_write_uleb(len(payload)))
+        out.extend(payload)
+        i = sec_end
+
+    return bytes(out)
+
+
 def _tail_lines(text: str, max_lines: int = 80) -> str:
     lines = (text or "").splitlines()
     if len(lines) <= max_lines:
@@ -57,6 +225,13 @@ def _tail_lines(text: str, max_lines: int = 80) -> str:
 
 def _safe_filename(s: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", s)
+
+
+def _test_name_with_parent(test_file: Path) -> str:
+    parent = test_file.parent.name
+    if parent:
+        return f"{parent}/{test_file.name}"
+    return test_file.name
 
 
 def _clamp01(x: float) -> float:
@@ -293,14 +468,51 @@ def materialize_compile_argv(inv: CompileInvocation, temp_dir: Path) -> list[str
     return inv.compile_prefix + extra_argv
 
 
-def collect_artifact_manifest_hashes(output_root: Path) -> dict[str, str]:
-    """Return map of relative artifact path -> MD5 hash."""
+def collect_artifact_manifest_hashes(
+    output_root: Path,
+    target: str,
+    wasm_binary_only: bool,
+    wasm_determinism_mode: str,
+) -> dict[str, str]:
+    """Return map of relative artifact path -> hash.
+
+    Selection is target-aware:
+    - wasm + wasm_binary_only: compare wasm binaries only (e.g. *.wasm) when present
+    - wasm + compare-all: compare all produced artifacts (e.g. loader + .wasm)
+    - js/asmjs: compare non-wasm outputs
+
+    Hashing mode for wasm binaries:
+    - strict: hash raw bytes
+    - functional: hash wasm with import/export names canonicalized away
+    """
+    files = [p for p in sorted(output_root.rglob("*")) if p.is_file()]
+
+    selected: list[Path]
+    if target == "wasm":
+        if wasm_binary_only:
+            wasm_files = [p for p in files if p.suffix == ".wasm"]
+            selected = wasm_files if wasm_files else files
+        else:
+            selected = files
+    elif target in ("js", "asmjs"):
+        non_wasm_files = [p for p in files if p.suffix != ".wasm"]
+        selected = non_wasm_files if non_wasm_files else files
+    else:
+        selected = files
+
     manifest: dict[str, str] = {}
-    for p in sorted(output_root.rglob("*")):
-        if not p.is_file():
-            continue
+    for p in selected:
         rel = str(p.relative_to(output_root))
-        manifest[rel] = _md5_file(p)
+        if target == "wasm" and p.suffix == ".wasm" and wasm_determinism_mode == "functional":
+            raw = p.read_bytes()
+            try:
+                norm = _normalize_wasm_functional(raw)
+            except Exception:
+                # Fallback to strict bytes on parser issues
+                norm = raw
+            manifest[rel] = _md5_bytes(norm)
+        else:
+            manifest[rel] = _md5_file(p)
     return manifest
 
 
@@ -333,10 +545,13 @@ def check_invocation_determinism(
     runs: int,
     probability: float,
     print_cmd: bool,
+    wasm_binary_only: bool,
+    wasm_determinism_mode: str,
     tmp_root: Path,
     failures_dir: Path,
 ) -> tuple[bool, str]:
-    label = f"{inv.test_file.name}:{inv.target}#{inv.invocation_index}"
+    test_name = _test_name_with_parent(inv.test_file)
+    label = f"{test_name}:{inv.target}#{inv.invocation_index}"
 
     if level == 0:
         return True, f"SKIP (determinism disabled): {label}"
@@ -347,7 +562,7 @@ def check_invocation_determinism(
     if runs <= 0:
         runs = 1
 
-    task_slug = _safe_filename(f"{inv.test_file.stem}_{inv.target}_{inv.invocation_index}")
+    task_slug = _safe_filename(f"{test_name}_{inv.target}_{inv.invocation_index}")
     task_root = tmp_root / task_slug
 
     baseline_manifest: dict[str, str] | None = None
@@ -380,7 +595,12 @@ def check_invocation_determinism(
                 f"  stdout(tail):\n{stdout_tail}",
             )
 
-        manifest = collect_artifact_manifest_hashes(run_dir)
+        manifest = collect_artifact_manifest_hashes(
+            run_dir,
+            inv.target,
+            wasm_binary_only,
+            wasm_determinism_mode,
+        )
         if not manifest:
             return (
                 False,
@@ -395,7 +615,7 @@ def check_invocation_determinism(
 
         if manifest != baseline_manifest:
             failures_dir.mkdir(parents=True, exist_ok=True)
-            failure_base = failures_dir / _safe_filename(f"{inv.test_file.name}.{inv.target}.{inv.invocation_index}")
+            failure_base = failures_dir / _safe_filename(f"{test_name}.{inv.target}.{inv.invocation_index}")
             if failure_base.exists():
                 shutil.rmtree(failure_base)
 
@@ -451,6 +671,12 @@ def main() -> int:
     ap.add_argument("--asan", action="store_true", help="Enable ASAN for wasm/asmjs targets")
     ap.add_argument("--exclude-dir", action="append", default=[], help="Directory name to exclude from --suite discovery (repeatable)")
     ap.add_argument("--include-xfail", action="store_true", help="Include tests marked with // XFAIL:")
+    ap.add_argument("--wasm-binary-only", dest="wasm_binary_only", action="store_true", default=True,
+                    help="For wasm target, compare only .wasm artifacts (default)")
+    ap.add_argument("--wasm-compare-all-artifacts", dest="wasm_binary_only", action="store_false",
+                    help="For wasm target, compare all artifacts (e.g. loader + .wasm)")
+    ap.add_argument("--wasm-determinism-mode", choices=("strict", "functional"), default="strict",
+                    help="strict: raw wasm bytes; functional: ignore wasm import/export names")
     ap.add_argument("--print-cmd", action="store_true", help="Print commands being executed")
     ap.add_argument("--keep-temps", action="store_true", help="Keep temporary output trees")
 
@@ -541,6 +767,10 @@ def main() -> int:
     print(f"Running {total} compile invocations with artifact-hash determinism")
     print(f"  level={args.level} runs={args.runs} probability={probability} jobs={jobs}")
     print(f"  targets={','.join(sorted(targets))}")
+    if "wasm" in targets:
+        artifact_mode = ".wasm only" if args.wasm_binary_only else "all wasm artifacts"
+        print(f"  wasm_artifact_mode={artifact_mode}")
+        print(f"  wasm_determinism_mode={args.wasm_determinism_mode}")
     if exclude_dirs:
         print(f"  exclude_dirs={','.join(sorted(exclude_dirs))}")
 
@@ -551,6 +781,8 @@ def main() -> int:
             runs=args.runs,
             probability=probability,
             print_cmd=args.print_cmd,
+            wasm_binary_only=args.wasm_binary_only,
+            wasm_determinism_mode=args.wasm_determinism_mode,
             tmp_root=tmp_root,
             failures_dir=failures_dir,
         )
@@ -561,7 +793,7 @@ def main() -> int:
             for fut in concurrent.futures.as_completed(future_map):
                 inv = future_map[fut]
                 ok, msg = fut.result()
-                label = f"{inv.test_file.name}:{inv.target}#{inv.invocation_index}"
+                label = f"{_test_name_with_parent(inv.test_file)}:{inv.target}#{inv.invocation_index}"
                 if msg.startswith("SKIP"):
                     skipped += 1
                     print(f"[skip] {label}")

@@ -28,6 +28,9 @@ parser.add_option("--determinism", dest="determinism", help="Select the level of
 parser.add_option("--determinism-probability", dest="determinism_probability", help="Select the chance a given test is tested for determinism", action="store", type="float", default=0.1)
 parser.add_option("--determinism-only", dest="determinism_only", help="set to exclude non determinism tests(mainly added for use in ci)", action="store_true", default=False)
 parser.add_option("--determinism-exclude-dir",dest="determinism_exclude_dirs",help="Exclude directory (by name) from print-after determinism suite discovery; repeatable (e.g. --determinism-exclude-dir=threading)", action="append", default=[])
+parser.add_option("--determinism-wasm-binary-only", dest="determinism_wasm_binary_only", help="In determinism mode, compare only .wasm artifacts for wasm target (default)", action="store_true", default=True)
+parser.add_option("--determinism-wasm-compare-all-artifacts", dest="determinism_wasm_binary_only", help="In determinism mode, compare all artifacts for wasm target (loader + .wasm)", action="store_false")
+parser.add_option("--determinism-wasm-mode", dest="determinism_wasm_mode", help="Wasm determinism mode: strict (byte-identical) or functional (ignore import/export names)", action="store", default="strict")
 parser.add_option("--preexecute-asmjs", dest="preexecute_asmjs", help="Run the tests inside PreExecuter in asmjs mode", action="store_true", default=False)
 parser.add_option("--all", dest="all", help="Run all the test kinds [genericjs/asmjs/wasm/preexecute]", action="store_true", default=False)
 parser.add_option("--pretty-code", dest="pretty_code", help="Compile with -cheerp-pretty-code", action="store_true", default=False)
@@ -143,12 +146,6 @@ def _collect_testcase_stats(xml_reports):
 
     return stats, per_test_times
 
-# def run_determinism_tests(level = 0, probability=0.1):
-#     print("Running Determinism tests")
-#     print(f"level =", level)
-#     print(f"probability =", probability)
-#     subprocess.run(["python3", "cheerp-test/stable/helpers/determinism_wrapper.py"])
-
 if __name__ == "__main__":
     overall_t0 = time.perf_counter()
     run_start_wall = time.time()
@@ -162,6 +159,10 @@ if __name__ == "__main__":
     exit_code = 0
 
     opt_level = f"O{option.optlevel}"
+
+    option.determinism_wasm_mode = (option.determinism_wasm_mode or "strict").strip().lower()
+    if option.determinism_wasm_mode not in ("strict", "functional"):
+        parser.error("--determinism-wasm-mode must be either 'strict' or 'functional'")
 
     user_lit_params = []
     if option.compiler:
@@ -178,7 +179,6 @@ if __name__ == "__main__":
         user_lit_params.append("--param TIME_TESTS=1")
     if option.himem:
         user_lit_params.append("--param HIMEM=1")
-
     if (option.all):
         mode = ["wasm", "asmjs", "genericjs", "preexecute", "preexecute-asmjs"]
     else:
@@ -225,6 +225,10 @@ if __name__ == "__main__":
     print(f"Optimization level: -O{option.optlevel}")
     print(f"Target modes: {mode}")
     print(f"determinism only mode: {option.determinism_only}")
+    if option.determinism:
+        det_artifact_mode = '.wasm only' if option.determinism_wasm_binary_only else 'all artifacts'
+        print(f"Determinism wasm artifact mode: {det_artifact_mode}")
+        print(f"Determinism wasm comparison mode: {option.determinism_wasm_mode}")
     effective_jobs = option.jobs
     if option.test_asan:
         effective_jobs = min(option.jobs, 2)
@@ -362,7 +366,7 @@ if __name__ == "__main__":
         print(f"  Probability: {option.determinism_probability}")
         print("="*60 + "\n")
 
-        # Map modes to determinism wrapper target format (use original_mode since mode list was modified)
+        # Determinism compile-hash runs cover all selected targets.
         determinism_targets = []
         if "wasm" in original_mode:
             determinism_targets.append("wasm")
@@ -370,8 +374,10 @@ if __name__ == "__main__":
             determinism_targets.append("asmjs")
         if "genericjs" in original_mode:
             determinism_targets.append("js")
+        if not determinism_targets:
+            determinism_targets = ["wasm", "asmjs", "js"]
 
-        print(f"Determinism testing targets: {len(determinism_targets) if determinism_targets else 'all'}")
+        print(f"Determinism testing targets: {','.join(determinism_targets)}")
 
         # Compiler-only flags for determinism wrappers (strip pseudo-flags consumed by lit.cfg)
         cheerp_flags_compiler_only = [f for f in cheerp_flags if f not in ("-valgrind", "-asan")]
@@ -420,6 +426,8 @@ if __name__ == "__main__":
             f"--jobs={effective_jobs}",
             f"--opt-level={opt_level}",
         ]
+        if option.compiler:
+            cmd_outputs += ["--compiler", option.compiler]
         if cheerp_flags_compiler_str:
             cmd_outputs.append(f"--cheerp-flags={cheerp_flags_compiler_str}")
         if option.test_asan:
@@ -428,6 +436,11 @@ if __name__ == "__main__":
             cmd_outputs.append(f"--target={','.join(determinism_targets)}")
         for excluded_dir in option.determinism_exclude_dirs:
             cmd_outputs.append(f"--exclude-dir={excluded_dir}")
+        if option.determinism_wasm_binary_only:
+            cmd_outputs.append("--wasm-binary-only")
+        else:
+            cmd_outputs.append("--wasm-compare-all-artifacts")
+        cmd_outputs.append(f"--wasm-determinism-mode={option.determinism_wasm_mode}")
         if option.print_cmd:
             cmd_outputs.append("--print-cmd")
         exit_code = run_wrapper("determinism(compile-hash)", cmd_outputs, exit_code)
