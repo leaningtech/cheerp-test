@@ -42,6 +42,9 @@ parser.add_option("--print-stats", dest="print_stats", help="Print a summary of 
 parser.add_option("--time", dest="time_tests", help="Print compilation time and run time for each test", action="store_true", default=False)
 parser.add_option("--compiler", dest="compiler", help="Compiler alias/path to pass to lit (e.g. cheerp, local, /opt/cheerp2/bin/clang++)", action="store")
 parser.add_option("--cheerp-prefix", dest="cheerp_prefix", help="Cheerp install prefix to pass to lit via CHEERP_PREFIX", action="store")
+parser.add_option("--ir", dest="emit_ir", help="Dump the LLVM IR after each pass", action="store_true", default=False);
+# EXPERIMENTAL: --quick mode (commented out until fully implemented)
+# parser.add_option("--quick", dest="all_modes_parallel", help="run all modes in parralel", action="store_true", default=False);
 (option, args) = parser.parse_args()
 def _format_duration(seconds: float) -> str:
     # Human-friendly, stable formatting for logs
@@ -78,7 +81,6 @@ def _run_timed(label: str, *, command=None, argv=None, shell: bool = False, prin
         result = subprocess.run(argv, **kwargs)
     t1 = time.perf_counter()
     return result, (t1 - t0)
-
 
 def _copy_prefixed_outputs(tests_root: str, prefix: str, since_epoch: float) -> int:
     """Copy generated lit Output/*.tmp artifacts to prefixed files, similar to cheerp-utils tests."""
@@ -179,6 +181,8 @@ if __name__ == "__main__":
         user_lit_params.append("--param TIME_TESTS=1")
     if option.himem:
         user_lit_params.append("--param HIMEM=1")
+    if option.emit_ir:
+        user_lit_params.append("--param IR=1")
     if (option.all):
         mode = ["wasm", "asmjs", "genericjs", "preexecute", "preexecute-asmjs"]
     else:
@@ -219,7 +223,6 @@ if __name__ == "__main__":
     if (option.typescript):
         cheerp_flags.append("-cheerp-make-dts")
     
-    # Print summary before running tests
     print("=== Configuration Overview ===")
     print(f"Test paths: {test_paths}")
     print(f"Optimization level: -O{option.optlevel}")
@@ -253,7 +256,23 @@ if __name__ == "__main__":
         print("Print stats: enabled")
     if option.time_tests:
         print("Per-test timing report: enabled")
+    if option.emit_ir:
+        print("IR dumping: enabled")
+
     print("="*30 + "\n")
+    
+    # EXPERIMENTAL: --quick mode implementation (commented out until fully implemented)
+    # if (option.all_modes_parallel):
+    #     mode = []
+    #     test_args = " ".join(test_paths)
+    #     command_parts = [
+    #         "lit",
+    #         "-vv",
+    #         "--xunit-xml-output=lit_TestReport_all_modes",
+    #         "--param PRE_EX=1",
+    #         "--param OPT_LEVEL=" + opt_level,
+    #         "--param "
+    #     ]
 
     if ("preexecute" in mode and not option.determinism_only):
         # run preexecute tests
@@ -261,6 +280,7 @@ if __name__ == "__main__":
         test_args = " ".join(test_paths)
         command_parts = [
             "lit",
+            "-vv",
             "--xunit-xml-output=litTestReport_preexec.xml",
             "--param OPT_LEVEL=" + opt_level,
             "--param CHEERP_FLAGS=" + shlex.quote(" ".join(cheerp_flags)),
@@ -288,6 +308,7 @@ if __name__ == "__main__":
         test_args = " ".join(test_paths)
         command_parts = [
             "lit",
+            "-vv",
             "--xunit-xml-output=litTestReport_preexec_asmjs.xml",
             "--param OPT_LEVEL=" + opt_level,
             "--param CHEERP_FLAGS=" + shlex.quote(" ".join(cheerp_flags)),
@@ -336,8 +357,14 @@ if __name__ == "__main__":
         lit_params.extend(user_lit_params)
 
         lit_options = []
-        # lit_options.append("-vv")
-        lit_options.append(f"-j{effective_jobs}")
+
+        if option.emit_ir:
+            lit_options.append("-a")     
+            lit_options.append("-j1")
+            # limit jobs for readable ir output
+        else:
+            lit_options.append("-vv")
+            lit_options.append(f"-j{effective_jobs}")
         
         # Add test report generation in xunit XML format
         # This creates litTestReport.xml which we'll convert to .test format
@@ -500,7 +527,6 @@ if __name__ == "__main__":
             with open('litTestReport.test', 'w') as f:
                 f.write('<testsuite>\n</testsuite>\n')
     else:
-        # No XML reports found, create empty report
         print("Warning: No test reports generated, creating empty report")
         with open('litTestReport.test', 'w') as f:
             f.write('<testsuite>\n</testsuite>\n')
