@@ -43,8 +43,7 @@ parser.add_option("--time", dest="time_tests", help="Print compilation time and 
 parser.add_option("--compiler", dest="compiler", help="Compiler alias/path to pass to lit (e.g. cheerp, local, /opt/cheerp2/bin/clang++)", action="store")
 parser.add_option("--cheerp-prefix", dest="cheerp_prefix", help="Cheerp install prefix to pass to lit via CHEERP_PREFIX", action="store")
 parser.add_option("--ir", dest="emit_ir", help="Dump the LLVM IR after each pass", action="store_true", default=False);
-# EXPERIMENTAL: --quick mode (commented out until fully implemented)
-# parser.add_option("--quick", dest="all_modes_parallel", help="run all modes in parralel", action="store_true", default=False);
+parser.add_option("--quick", dest="quick_mode", help="run all modes in parallel (combined regular+preexec)", action="store_true", default=False);
 (option, args) = parser.parse_args()
 def _format_duration(seconds: float) -> str:
     # Human-friendly, stable formatting for logs
@@ -106,7 +105,6 @@ def _copy_prefixed_outputs(tests_root: str, prefix: str, since_epoch: float) -> 
             copied += 1
 
     return copied
-
 
 def _collect_testcase_stats(xml_reports):
     stats = {
@@ -261,18 +259,57 @@ if __name__ == "__main__":
 
     print("="*30 + "\n")
     
-    # EXPERIMENTAL: --quick mode implementation (commented out until fully implemented)
-    # if (option.all_modes_parallel):
-    #     mode = []
-    #     test_args = " ".join(test_paths)
-    #     command_parts = [
-    #         "lit",
-    #         "-vv",
-    #         "--xunit-xml-output=lit_TestReport_all_modes",
-    #         "--param PRE_EX=1",
-    #         "--param OPT_LEVEL=" + opt_level,
-    #         "--param "
-    #     ]
+    # Quick mode: run regular and preexec modes in a single lit invocation
+    if option.quick_mode:
+        if option.determinism_only:
+            print("Warning: --quick mode ignored when --determinism-only is set")
+        else:
+            test_args = " ".join(test_paths)
+            
+            targets = []
+            if "wasm" in mode or "genericjs" in mode:
+                targets.append("wasm")
+            if "asmjs" in mode:
+                targets.append("asmjs")
+            if "genericjs" in mode or "wasm" in mode:
+                targets.append("js")
+            
+            if not targets:
+                targets = ["wasm", "asmjs", "js"]
+            
+            target_param = ",".join(targets)
+            
+            # Build lit command with both regular and preexec modes enabled
+            lit_params = []
+            lit_params.append(f"--param OPT_LEVEL={opt_level}")
+            lit_params.append(f"--param TARGET={target_param}")
+            lit_params.append("--param REG=1")  # Enable regular mode
+            lit_params.append("--param PRE_EX=1")  # Enable both preexec modes
+            
+            if cheerp_flags:
+                flags_str = " ".join(cheerp_flags)
+                lit_params.append(f"--param CHEERP_FLAGS={shlex.quote(flags_str)}")
+            
+            lit_params.extend(user_lit_params)
+            
+            lit_options = ["-vv", f"-j{effective_jobs}"]
+            lit_options.append("--xunit-xml-output=litTestReport.xml")
+            
+            command = f"lit {' '.join(lit_options)} {' '.join(lit_params)} {test_args}"
+            
+            result, elapsed = _run_timed(
+                "lit (quick mode: regular+preexec)",
+                command=command,
+                shell=True,
+                print_cmd=option.print_cmd,
+            )
+            timings.append({"label": "lit (quick mode)", "seconds": elapsed})
+            print(f"[timing] lit (quick mode): {_format_duration(elapsed)}")
+            if result.returncode != 0:
+                exit_code = result.returncode
+            
+            # Clear mode list so we don't run tests again below
+            mode = []
 
     if ("preexecute" in mode and not option.determinism_only):
         # run preexecute tests
@@ -285,6 +322,7 @@ if __name__ == "__main__":
             "--param OPT_LEVEL=" + opt_level,
             "--param CHEERP_FLAGS=" + shlex.quote(" ".join(cheerp_flags)),
             "--param PRE_EX=j",
+            "--param REG=0",
             *user_lit_params,
             "-j" + str(effective_jobs),
             test_args,
@@ -313,6 +351,7 @@ if __name__ == "__main__":
             "--param OPT_LEVEL=" + opt_level,
             "--param CHEERP_FLAGS=" + shlex.quote(" ".join(cheerp_flags)),
             "--param PRE_EX=a",
+            "--param REG=0",  # Disable regular mode for preexec-only
             *user_lit_params,
             "-j" + str(effective_jobs),
             test_args,
@@ -367,7 +406,7 @@ if __name__ == "__main__":
             lit_options.append(f"-j{effective_jobs}")
         
         # Add test report generation in xunit XML format
-        # This creates litTestReport.xml which we'll convert to .test format
+        # This creates litTestReport.xml which converts to .test format
         lit_options.append("--xunit-xml-output=litTestReport.xml")
         
         command = f"lit {' '.join(lit_options)} {' '.join(lit_params)} {test_args}"
@@ -383,9 +422,6 @@ if __name__ == "__main__":
         if result.returncode != 0:
             exit_code = result.returncode
     
-    # Run determinism tests if requested
-    # This runs after regular tests to match old suite behavior where determinism
-    # testing is integrated with the specified target mode
     if option.determinism:
         print("\n" + "="*60)
         print("Running Determinism tests")
@@ -407,7 +443,7 @@ if __name__ == "__main__":
         print(f"Determinism testing targets: {','.join(determinism_targets)}")
 
         # Compiler-only flags for determinism wrappers (strip pseudo-flags consumed by lit.cfg)
-        cheerp_flags_compiler_only = [f for f in cheerp_flags if f not in ("-valgrind", "-asan")]
+        cheerp_flags_compiler_only = [flag for flag in cheerp_flags if flag not in ("-valgrind", "-asan")]
         cheerp_flags_compiler_str = " ".join(cheerp_flags_compiler_only)
 
         # Helper to run a determinism wrapper against either a suite dir or explicit files
@@ -476,7 +512,6 @@ if __name__ == "__main__":
         copied = _copy_prefixed_outputs(os.path.dirname(__file__), option.prefix, run_start_wall)
         print(f"Copied {copied} prefixed output artifact(s)")
 
-    # # The .test format is what the old test suite used
     # Collect all XML reports that were generated
     xml_reports = []
     for xml_file in ['litTestReport.xml', 'litTestReport_preexec.xml', 'litTestReport_preexec_asmjs.xml']:
@@ -492,13 +527,11 @@ if __name__ == "__main__":
             with open('litTestReport.test', 'w') as f:
                 f.write('<testsuite>\n')
                 
-                # Process each XML report
                 for xml_file in xml_reports:
                     try:
                         tree = ET.parse(xml_file)
                         root = tree.getroot()
                         
-                        # Iterate through test cases
                         for testsuite in root.findall('.//testsuite'):
                             for testcase in testsuite.findall('testcase'):
                                 classname = testcase.get('classname', '')
