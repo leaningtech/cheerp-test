@@ -13,6 +13,60 @@
 #include <cheerp/types.h>
 #include <cheerp/client.h>
 
+namespace test_format {
+	static inline size_t str_copy(char* dest, const char* src, size_t max) {
+		size_t i = 0;
+		while (src[i] && i < max - 1) {
+			dest[i] = src[i];
+			i++;
+		}
+		return i;
+	}
+
+	static inline size_t uint_to_hex(char* buf, unsigned long long val) {
+		if (val == 0) {
+			buf[0] = '0';
+			return 1;
+		}
+		char temp[20];
+		size_t i = 0;
+		while (val > 0) {
+			int digit = val & 0xF;
+			temp[i++] = digit < 10 ? '0' + digit : 'a' + (digit - 10);
+			val >>= 4;
+		}
+		for (size_t j = 0; j < i; j++) {
+			buf[j] = temp[i - 1 - j];
+		}
+		return i;
+	}
+
+	static inline size_t uint_to_dec(char* buf, unsigned long long val) {
+		if (val == 0) {
+			buf[0] = '0';
+			return 1;
+		}
+		char temp[20];
+		size_t i = 0;
+		while (val > 0) {
+			temp[i++] = '0' + (val % 10);
+			val /= 10;
+		}
+		for (size_t j = 0; j < i; j++) {
+			buf[j] = temp[i - 1 - j];
+		}
+		return i;
+	}
+
+	static inline size_t int_to_dec(char* buf, long long val) {
+		if (val < 0) {
+			buf[0] = '-';
+			return 1 + uint_to_dec(buf + 1, (unsigned long long)(-val));
+		}
+		return uint_to_dec(buf, (unsigned long long)val);
+	}
+}
+
 // Wrapper for printing values in hexadecimal format
 template<typename T>
 struct Hex {
@@ -21,8 +75,6 @@ struct Hex {
 };
 
 // In PRE_EXECUTE_TEST mode, __preexecute_print_case is defined by the
-// preexecuter (PreExecute.cpp). In regular mode we implement it here using
-// printf-style formatting and cheerp::console_log.
 
 // PREEXECUTE MODE ----------------------------------------------------------
 #ifdef PRE_EXECUTE_TEST
@@ -32,55 +84,83 @@ template<typename... Args>
 extern void __preexecute_print_case(const char *msg, Args... vals);
 
 // Special handling for Hex in preexecution mode - format it ourselves
-// to keep the same textual format across modes.
+// to keep the same format across modes.
 template<typename T>
 void __preexecute_print_case(const char *msg, Hex<T> hex) {
 	char buffer[256];
+	size_t offset = 0;
 	if constexpr (std::is_integral_v<T>) {
+		// Copy message
+		offset = test_format::str_copy(buffer, msg, sizeof(buffer));
+		if (offset < sizeof(buffer) - 1) buffer[offset++] = ' ';
+		
 		// Handle signed negative values
 		if constexpr (std::is_signed_v<T>) {
 			if (hex.value < 0) {
+				if (offset < sizeof(buffer) - 1) buffer[offset++] = '-';
+				if (offset < sizeof(buffer) - 2) {
+					buffer[offset++] = '0';
+					buffer[offset++] = 'x';
+				}
 				if constexpr (sizeof(T) <= sizeof(int)) {
-					snprintf(buffer, sizeof(buffer), "%s -0x%x", msg, (unsigned int)(-hex.value));
+					offset += test_format::uint_to_hex(buffer + offset, (unsigned int)(-hex.value));
 				} else {
-					snprintf(buffer, sizeof(buffer), "%s -0x%llx", msg, (unsigned long long)(-hex.value));
+					offset += test_format::uint_to_hex(buffer + offset, (unsigned long long)(-hex.value));
 				}
 			} else {
+				if (offset < sizeof(buffer) - 2) {
+					buffer[offset++] = '0';
+					buffer[offset++] = 'x';
+				}
 				if constexpr (sizeof(T) <= sizeof(int)) {
-					snprintf(buffer, sizeof(buffer), "%s 0x%x", msg, (unsigned int)hex.value);
+					offset += test_format::uint_to_hex(buffer + offset, (unsigned int)hex.value);
 				} else {
-					snprintf(buffer, sizeof(buffer), "%s 0x%llx", msg, (unsigned long long)hex.value);
+					offset += test_format::uint_to_hex(buffer + offset, (unsigned long long)hex.value);
 				}
 			}
 		} else {
+			if (offset < sizeof(buffer) - 2) {
+				buffer[offset++] = '0';
+				buffer[offset++] = 'x';
+			}
 			if constexpr (sizeof(T) <= sizeof(int)) {
-				snprintf(buffer, sizeof(buffer), "%s 0x%x", msg, (unsigned int)hex.value);
+				offset += test_format::uint_to_hex(buffer + offset, (unsigned int)hex.value);
 			} else {
-				snprintf(buffer, sizeof(buffer), "%s 0x%llx", msg, (unsigned long long)hex.value);
+				offset += test_format::uint_to_hex(buffer + offset, (unsigned long long)hex.value);
 			}
 		}
 	} else {
-		snprintf(buffer, sizeof(buffer), "%s", msg);
+		offset = test_format::str_copy(buffer, msg, sizeof(buffer));
 	}
+	buffer[offset] = '\0';
 	__preexecute_print_case(buffer);
 }
 
 // Special handling for char types in preexecution mode - format as string
 inline void __preexecute_print_case(const char *msg, char value) {
 	char buffer[256];
-	snprintf(buffer, sizeof(buffer), "%s %c", msg, value);
+	size_t offset = test_format::str_copy(buffer, msg, sizeof(buffer));
+	if (offset < sizeof(buffer) - 1) buffer[offset++] = ' ';
+	if (offset < sizeof(buffer) - 1) buffer[offset++] = value;
+	buffer[offset] = '\0';
 	__preexecute_print_case(buffer);
 }
 
 inline void __preexecute_print_case(const char *msg, signed char value) {
 	char buffer[256];
-	snprintf(buffer, sizeof(buffer), "%s %c", msg, value);
+	size_t offset = test_format::str_copy(buffer, msg, sizeof(buffer));
+	if (offset < sizeof(buffer) - 1) buffer[offset++] = ' ';
+	if (offset < sizeof(buffer) - 1) buffer[offset++] = value;
+	buffer[offset] = '\0';
 	__preexecute_print_case(buffer);
 }
 
 inline void __preexecute_print_case(const char *msg, unsigned char value) {
 	char buffer[256];
-	snprintf(buffer, sizeof(buffer), "%s %c", msg, value);
+	size_t offset = test_format::str_copy(buffer, msg, sizeof(buffer));
+	if (offset < sizeof(buffer) - 1) buffer[offset++] = ' ';
+	if (offset < sizeof(buffer) - 1) buffer[offset++] = value;
+	buffer[offset] = '\0';
 	__preexecute_print_case(buffer);
 }
 
@@ -100,23 +180,31 @@ template<typename T>
 void formatSingleValue(char* buffer, size_t bufsize, size_t& offset, T value) {
 	if (offset >= bufsize - 1) return;
 	if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float>) {
-		offset += snprintf(buffer + offset, bufsize - offset, " %.10f", (double)value);
+    // snprintf is still used heren, should ideally be replaced
+    offset += snprintf(buffer + offset, bufsize - offset, " %.10f", (double)value);
 	} else if constexpr (std::is_same_v<T, const char*> || std::is_same_v<T, char*>) {
-		offset += snprintf(buffer + offset, bufsize - offset, " %s", value ? value : "nullptr");
+		if (offset < bufsize - 1) buffer[offset++] = ' ';
+		if (value) {
+			offset += test_format::str_copy(buffer + offset, value, bufsize - offset);
+		} else {
+			offset += test_format::str_copy(buffer + offset, "nullptr", bufsize - offset);
+		}
 	} else if constexpr (std::is_same_v<T, char> || std::is_same_v<T, signed char> || std::is_same_v<T, unsigned char>) {
-		offset += snprintf(buffer + offset, bufsize - offset, " %c", value);
+		if (offset < bufsize - 1) buffer[offset++] = ' ';
+		if (offset < bufsize - 1) buffer[offset++] = value;
 	} else if constexpr (std::is_integral_v<T>) {
+		if (offset < bufsize - 1) buffer[offset++] = ' ';
 		if constexpr (std::is_unsigned_v<T>) {
 			if constexpr (sizeof(T) <= sizeof(unsigned int)) {
-				offset += snprintf(buffer + offset, bufsize - offset, " %u", (unsigned int)value);
+				offset += test_format::uint_to_dec(buffer + offset, (unsigned int)value);
 			} else {
-				offset += snprintf(buffer + offset, bufsize - offset, " %llu", (unsigned long long)value);
+				offset += test_format::uint_to_dec(buffer + offset, (unsigned long long)value);
 			}
 		} else {
 			if constexpr (sizeof(T) <= sizeof(int)) {
-				offset += snprintf(buffer + offset, bufsize - offset, " %d", (int)value);
+				offset += test_format::int_to_dec(buffer + offset, (int)value);
 			} else {
-				offset += snprintf(buffer + offset, bufsize - offset, " %lld", (long long)value);
+				offset += test_format::int_to_dec(buffer + offset, (long long)value);
 			}
 		}
 	}
@@ -127,25 +215,39 @@ template<typename T>
 void formatSingleValue(char* buffer, size_t bufsize, size_t& offset, Hex<T> hex) {
 	if (offset >= bufsize - 1) return;
 	if constexpr (std::is_integral_v<T>) {
+		if (offset < bufsize - 1) buffer[offset++] = ' ';
 		if constexpr (std::is_signed_v<T>) {
 			if (hex.value < 0) {
+				if (offset < bufsize - 1) buffer[offset++] = '-';
+				if (offset < bufsize - 2) {
+					buffer[offset++] = '0';
+					buffer[offset++] = 'x';
+				}
 				if constexpr (sizeof(T) <= sizeof(int)) {
-					offset += snprintf(buffer + offset, bufsize - offset, " -0x%x", (unsigned int)(-hex.value));
+					offset += test_format::uint_to_hex(buffer + offset, (unsigned int)(-hex.value));
 				} else {
-					offset += snprintf(buffer + offset, bufsize - offset, " -0x%llx", (unsigned long long)(-hex.value));
+					offset += test_format::uint_to_hex(buffer + offset, (unsigned long long)(-hex.value));
 				}
 			} else {
+				if (offset < bufsize - 2) {
+					buffer[offset++] = '0';
+					buffer[offset++] = 'x';
+				}
 				if constexpr (sizeof(T) <= sizeof(int)) {
-					offset += snprintf(buffer + offset, bufsize - offset, " 0x%x", (unsigned int)hex.value);
+					offset += test_format::uint_to_hex(buffer + offset, (unsigned int)hex.value);
 				} else {
-					offset += snprintf(buffer + offset, bufsize - offset, " 0x%llx", (unsigned long long)hex.value);
+					offset += test_format::uint_to_hex(buffer + offset, (unsigned long long)hex.value);
 				}
 			}
 		} else {
+			if (offset < bufsize - 2) {
+				buffer[offset++] = '0';
+				buffer[offset++] = 'x';
+			}
 			if constexpr (sizeof(T) <= sizeof(int)) {
-				offset += snprintf(buffer + offset, bufsize - offset, " 0x%x", (unsigned int)hex.value);
+				offset += test_format::uint_to_hex(buffer + offset, (unsigned int)hex.value);
 			} else {
-				offset += snprintf(buffer + offset, bufsize - offset, " 0x%llx", (unsigned long long)hex.value);
+				offset += test_format::uint_to_hex(buffer + offset, (unsigned long long)hex.value);
 			}
 		}
 	}
@@ -155,8 +257,9 @@ void formatSingleValue(char* buffer, size_t bufsize, size_t& offset, Hex<T> hex)
 template<typename... Args>
 void __preexecute_print_case(const char *msg, Args... vals) {
 	char buffer[512];
-	size_t offset = snprintf(buffer, sizeof(buffer), "%s", msg);
+	size_t offset = test_format::str_copy(buffer, msg, sizeof(buffer));
 	(formatSingleValue(buffer, sizeof(buffer), offset, vals), ...);
+	buffer[offset] = '\0';
 	cheerp::console_log(buffer);
 }
 
@@ -168,8 +271,6 @@ void print_multi_vals(const char *msg, T first, Args... rest){
 
 #endif // PRE_EXECUTE_TEST
 
-// GenericJS-only functions for client::String support
-// NOTE: __CHEERP_CLIENT__ is not defined by current toolchains; __CHEERP__ is.
 #ifdef __CHEERP__
 template<typename T>
 [[cheerp::genericjs]]
@@ -214,6 +315,7 @@ void assertPrint(const char* msg, client::String* value)
 #endif // __CHEERP__
 
 // Universal assertPrint functions – thin wrappers around __preexecute_print_case
+// function name should be improved, no assertion actually happens
 inline void assertPrint(const char* msg)
 {
 	__preexecute_print_case(msg);
@@ -295,8 +397,6 @@ void assertEqual(const T &value, const T &expected, const char* msg)
 			__preexecute_print_case(msg, value);
 	}
 	else {
-		// For non-scalar types we don't have a stable, portable printing format.
-		// In regular mode the value will typically be ignored by the formatter.
 		__preexecute_print_case(msg, value);
 	}
 }
