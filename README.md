@@ -401,18 +401,6 @@ void webMain() {
 }
 ```
 
-### Test organization
-
-Tests are organized by functionality:
-- `/unit/` - Unit tests for specific features
-- `/memory/` - Memory management tests
-- `/std/` - Standard library tests
-- `/dom/` - DOM interaction tests
-- `/jsexport/` - JS interop and export tests
-- `/client/` - Client library tests
-
-## Debugging and troubleshooting
-
 ### Finding test artifacts
 
 Lit creates temporary directories for each test under `Output/*.tmp/`. Use these paths to inspect compiler output:
@@ -455,27 +443,6 @@ python3 run_lit_tests.py --print-cmd .
 # With direct lit
 lit -a tests/memory/test1.cpp
 ```
-
-### Common issues
-
-**Test fails but you can't see the compiler command:**
-- Use `--print-cmd` to see exact commands
-- Check `Output/*.tmp/` directories for artifacts
-
-**Test passes locally but fails in CI:**
-- Check optimization level (`-O1` vs `-O2`)
-- Verify determinism with `--determinism 5`
-- Check if ASan or other flags affect behavior
-
-**FileCheck doesn't match output:**
-- Inspect the actual output in `Output/*.tmp/`
-- Check for whitespace or formatting differences
-- Use `CHECK-DAG` for order-independent matching
-
-**Target-specific failures:**
-- Use `REQUIRES:` to skip tests on unsupported targets
-- Check if test assumes specific target behavior
-- Use `run_if_<target>` for conditional execution
 
 ## Reference: All run_lit_tests.py options
 
