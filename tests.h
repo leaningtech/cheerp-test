@@ -164,12 +164,6 @@ inline void __preexecute_print_case(const char *msg, unsigned char value) {
 	__preexecute_print_case(buffer);
 }
 
-// Wrapper with more descriptive name for printing multiple values
-template<typename T, typename... Args>
-void print_multi_vals(const char *msg, T first, Args... rest){
-	__preexecute_print_case(msg, first, rest...);
-}
-
 #else // !PRE_EXECUTE_TEST
 
 // REGULAR MODE ------------------------------------------------------------
@@ -261,12 +255,6 @@ void __preexecute_print_case(const char *msg, Args... vals) {
 	(formatSingleValue(buffer, sizeof(buffer), offset, vals), ...);
 	buffer[offset] = '\0';
 	cheerp::console_log(buffer);
-}
-
-// Wrapper with more descriptive name for printing multiple values
-template<typename T, typename... Args>
-void print_multi_vals(const char *msg, T first, Args... rest){
-	__preexecute_print_case(msg, first, rest...);
 }
 
 #endif // PRE_EXECUTE_TEST
@@ -362,15 +350,6 @@ void assertEqual(double value, double expected, double epsilon, const char* msg)
 void assertEqual(const char *value, const char *expected, const char* msg)
 {
 	if (strcmp(value, expected) == 0)
-		__preexecute_print_case(msg, value);
-	else{
-		__preexecute_print_case("FAILURE");
-	}
-}
-
-void assertUnequal(const char *value, const char *expected, const char* msg)
-{
-	if (strcmp(value, expected) != 0)
 		__preexecute_print_case(msg, value);
 	else{
 		__preexecute_print_case("FAILURE");

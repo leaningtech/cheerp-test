@@ -18,23 +18,9 @@ def create_driver(compiled_file, testing_file, output_file, module='vanilla', pt
     # Try to find polyfill file in standard locations if not provided
     if not polyfill_file:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        # Search a few common relative locations for import-polyfills.js.
-        #
-        # Layouts we support:
-        #   - cheerp-test/stable/js-helpers/import-polyfills.js
-        #   - cheerp-test/test-wrappers/import-polyfills.js
-        #
-        # Note: this script lives in stable/helpers/, so we need to walk up
-        # one or two directories to reach those locations.
         possible_paths = [
-            # stable/helpers/js-helpers/import-polyfills.js (legacy expectation)
             os.path.join(script_dir, 'js-helpers/import-polyfills.js'),
-            # stable/js-helpers/import-polyfills.js (current layout)
             os.path.join(script_dir, '../js-helpers/import-polyfills.js'),
-            # stable/test-wrappers/import-polyfills.js (legacy expectation)
-            os.path.join(script_dir, '../test-wrappers/import-polyfills.js'),
-            # test-wrappers/import-polyfills.js at repo root
-            os.path.join(script_dir, '../../test-wrappers/import-polyfills.js'),
         ]
         for path in possible_paths:
             if os.path.exists(path):
