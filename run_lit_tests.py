@@ -2,12 +2,10 @@
 
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 import time
 import xml.etree.ElementTree as ET
-from pathlib import Path
 from optparse import OptionParser
 
 usage = "usage: %prog [options] [test_paths...]"
@@ -16,7 +14,7 @@ parser.add_option("-O", dest="optlevel", help="Optimization level (default -O1)"
 parser.add_option("-j", dest="jobs", help="Number of jobs (default 1)", action="store", type="int", default=1)
 parser.add_option("--keep", dest="keep_logs", help="Don't delete log files for individual tests",
     action="store_true", default=False)
-parser.add_option("--prefix", dest="prefix", help="Keep the generated output for each test, with the name prefix_testname.js", action="store")
+parser.add_option("--prefix", dest="prefix", help="Write outputs into Outputs-<prefix>/ instead of Outputs/", action="store")
 parser.add_option("--asmjs", dest="asmjs", help="Run the tests in asmjs mode", action="store_true", default=False)
 parser.add_option("--genericjs", dest="genericjs", help="Run the tests in genericjs mode", action="store_true", default=False)
 parser.add_option("--wasm", dest="wasm", help="Run the tests in wasm mode",
@@ -81,31 +79,6 @@ def _run_timed(label: str, *, command=None, argv=None, shell: bool = False, prin
     t1 = time.perf_counter()
     return result, (t1 - t0)
 
-def _copy_prefixed_outputs(tests_root: str, prefix: str, since_epoch: float) -> int:
-    """Copy generated lit Output/*.tmp artifacts to prefixed files, similar to cheerp-utils tests."""
-    root = Path(tests_root)
-    copied = 0
-
-    for tmp_dir in root.glob('**/Output/*.tmp'):
-        try:
-            if tmp_dir.stat().st_mtime < (since_epoch - 5):
-                continue
-        except FileNotFoundError:
-            continue
-
-        test_dir = tmp_dir.parent.parent
-        stem_without_tmp = tmp_dir.name[:-4] if tmp_dir.name.endswith('.tmp') else tmp_dir.name
-        test_stem = Path(stem_without_tmp).stem
-
-        for artifact in tmp_dir.iterdir():
-            if not artifact.is_file():
-                continue
-            target = test_dir / f"{prefix}_{test_stem}_{artifact.name}"
-            shutil.copy2(artifact, target)
-            copied += 1
-
-    return copied
-
 def _collect_testcase_stats(xml_reports):
     stats = {
         'total': 0,
@@ -148,7 +121,6 @@ def _collect_testcase_stats(xml_reports):
 
 if __name__ == "__main__":
     overall_t0 = time.perf_counter()
-    run_start_wall = time.time()
     timings = []  # list of dicts: {label, seconds}
 
     mode = []
@@ -508,10 +480,6 @@ if __name__ == "__main__":
             cmd_outputs.append("--print-cmd")
         exit_code = run_wrapper("determinism(compile-hash)", cmd_outputs, exit_code)
     
-    if option.prefix:
-        copied = _copy_prefixed_outputs(os.path.dirname(__file__), option.prefix, run_start_wall)
-        print(f"Copied {copied} prefixed output artifact(s)")
-
     # Collect all XML reports that were generated
     xml_reports = []
     for xml_file in ['litTestReport.xml', 'litTestReport_preexec.xml', 'litTestReport_preexec_asmjs.xml']:

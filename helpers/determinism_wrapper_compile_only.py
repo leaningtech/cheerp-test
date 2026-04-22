@@ -645,6 +645,8 @@ def find_test_files(root: Path, *, exclude_dirs: set[str]) -> list[Path]:
         parts = set(p.parts)
         if "Output" in parts:
             continue
+        if any(part.startswith("Outputs") for part in p.parts):
+            continue
         if "determinism_failures" in parts:
             continue
         if "determinism_failures_compile_only" in parts:

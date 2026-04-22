@@ -250,9 +250,9 @@ When using `run_lit_tests.py`, these files are generated in `cheerp-test/`:
 - `litTestReport_preexec_asmjs.xml` (preexecute asmjs mode)
 - `litTestReport.test` (merged summary report)
 
-Temporary artifacts are placed in test output directories (`Output/*.tmp`) by lit; keep them when debugging failures using `--keep`.
+Temporary artifacts are placed under `Outputs/<relpath>/Output/<testname>.tmp/` (mirroring the source tree) by lit; keep them when debugging failures using `--keep`.
 
-When using `--prefix <name>`, test outputs are copied to the test directory with the naming pattern: `<prefix>_<testname>_<artifact>`.
+When using `--prefix <name>` (or `--param OUTPUT_PREFIX=<name>`), the output tree is written to `Outputs-<name>/` instead of `Outputs/`, so multiple configurations can coexist for diffing.
 
 ## Writing tests
 
@@ -403,14 +403,14 @@ void webMain() {
 
 ### Finding test artifacts
 
-Lit creates temporary directories for each test under `Output/*.tmp/`. Use these paths to inspect compiler output:
+Lit creates temporary directories for each test under `Outputs/<relpath>/Output/<testname>.tmp/`, mirroring the source layout. For example, artifacts for `memory/test1.cpp` land in `Outputs/memory/Output/test1.cpp.tmp/`.
 
 ```bash
 # List recent test artifacts
-find . -path '*/Output/*.tmp' -type d -mmin -5
+find Outputs -path '*/Output/*.tmp' -type d -mmin -5
 
 # Inspect a specific test's output
-ls -la unit/memory/Output/test1.cpp.tmp/
+ls -la Outputs/memory/Output/test1.cpp.tmp/
 ```
 
 ### Keeping logs for debugging
@@ -423,13 +423,13 @@ python3 run_lit_tests.py --keep memory/test1.cpp
 
 ### Extracting test outputs
 
-Use `--prefix` to copy test artifacts with a recognizable name:
+Use `--prefix` to write the output tree into `Outputs-<prefix>/` instead of `Outputs/`, so you can keep results from multiple runs side-by-side for diffing:
 
 ```bash
 python3 run_lit_tests.py --prefix debug memory/test1.cpp
 
-# Outputs are saved as: debug_test1_<artifact>
-ls -la memory/debug_test1_*
+# Artifacts land under Outputs-debug/
+ls -la Outputs-debug/memory/Output/test1.cpp.tmp/
 ```
 
 ### Verbose lit output
@@ -492,7 +492,7 @@ Options:
   
   Debugging:
   --keep                Don't delete log files for individual tests
-  --prefix PREFIX       Keep generated output with name prefix_testname.js
+  --prefix PREFIX       Write outputs to Outputs-<PREFIX>/ instead of Outputs/
   --print-cmd           Print commands as they're executed
   --print-stats         Print a summary of test result numbers
   --time                Print compilation and run time for each test
