@@ -127,7 +127,7 @@ if __name__ == "__main__":
     cheerp_flags = []
     extra_flags = []
     # Use args as test paths, default to current directory if none provided
-    test_paths = args if len(args) > 0 else ['.']
+    test_paths = args if len(args) > 0 else ['tests']
     exit_code = 0
 
     opt_level = f"O{option.optlevel}"

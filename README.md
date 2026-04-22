@@ -20,10 +20,10 @@ python3 run_lit_tests.py
 python3 run_lit_tests.py /unit/jsexport
 
 # Run a single test
-python3 run_lit_tests.py memory/test1.cpp
+python3 run_lit_tests.py tests/memory/test1.cpp
 
 # Debug a failing test (keeps logs)
-python3 run_lit_tests.py --keep --prefix debug memory/test1.cpp
+python3 run_lit_tests.py --keep --prefix debug tests/memory/test1.cpp
 ```
 
 ## Recommended way to run tests
@@ -54,7 +54,7 @@ python3 run_lit_tests.py --suite ./cheerp-test
 python3 run_lit_tests.py /memory
 
 # Run a single test
-python3 run_lit_tests.py memory/test1.cpp
+python3 run_lit_tests.py tests/memory/test1.cpp
 
 # Run with all targets and modes (equivalent to --wasm --asmjs --genericjs --preexecute --preexecute-asmjs)
 python3 run_lit_tests.py --all .
@@ -403,7 +403,7 @@ void webMain() {
 
 ### Finding test artifacts
 
-Lit creates temporary directories for each test under `Outputs/<relpath>/Output/<testname>.tmp/`, mirroring the source layout. For example, artifacts for `memory/test1.cpp` land in `Outputs/memory/Output/test1.cpp.tmp/`.
+Lit creates temporary directories for each test under `Outputs/<relpath>/Output/<testname>.tmp/`, mirroring the source layout. For example, artifacts for `tests/memory/test1.cpp` land in `Outputs/memory/Output/test1.cpp.tmp/`.
 
 ```bash
 # List recent test artifacts
@@ -418,7 +418,7 @@ ls -la Outputs/memory/Output/test1.cpp.tmp/
 By default, logs are cleaned up. Use `--keep` to preserve them:
 
 ```bash
-python3 run_lit_tests.py --keep memory/test1.cpp
+python3 run_lit_tests.py --keep tests/memory/test1.cpp
 ```
 
 ### Extracting test outputs
@@ -426,7 +426,7 @@ python3 run_lit_tests.py --keep memory/test1.cpp
 Use `--prefix` to write the output tree into `Outputs-<prefix>/` instead of `Outputs/`, so you can keep results from multiple runs side-by-side for diffing:
 
 ```bash
-python3 run_lit_tests.py --prefix debug memory/test1.cpp
+python3 run_lit_tests.py --prefix debug tests/memory/test1.cpp
 
 # Artifacts land under Outputs-debug/
 ls -la Outputs-debug/memory/Output/test1.cpp.tmp/

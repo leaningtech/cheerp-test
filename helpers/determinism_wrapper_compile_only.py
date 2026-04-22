@@ -259,9 +259,13 @@ def _split_flags(flags: str) -> list[str]:
     return shlex.split(flags)
 
 
-def _tests_root_from_this_file() -> Path:
-    # .../tests/helpers/determinism_wrapper_compile_only.py -> .../tests
+def _repo_root_from_this_file() -> Path:
+    # .../helpers/determinism_wrapper_compile_only.py -> repo root
     return Path(__file__).resolve().parents[1]
+
+
+def _tests_dir_from_this_file() -> Path:
+    return _repo_root_from_this_file() / "tests"
 
 
 def should_test_determinism(label: str, probability: float) -> bool:
@@ -423,7 +427,7 @@ def compile_invocations_for_test(
     asan: bool,
 ) -> list[CompileInvocation]:
     run_lines = iter_run_lines(test_file)
-    include_dir = _tests_root_from_this_file()
+    include_dir = _tests_dir_from_this_file()
 
     invocations: list[CompileInvocation] = []
 
@@ -752,7 +756,7 @@ def main() -> int:
         return 1
 
     jobs = max(1, int(args.jobs))
-    failures_dir = _tests_root_from_this_file() / "determinism_failures_compile_only"
+    failures_dir = _repo_root_from_this_file() / "determinism_failures_compile_only"
 
     # Ensure compiler-adjacent tools can be found.
     compiler_dir = str(Path(args.compiler).resolve().parent)
