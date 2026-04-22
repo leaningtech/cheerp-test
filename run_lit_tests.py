@@ -220,12 +220,6 @@ if __name__ == "__main__":
     print(f"determinism only mode: {option.determinism_only}")
     if option.determinism or option.determinism_only:
         print(f"Determinism enabled (probability={option.determinism_probability})")
-    effective_jobs = option.jobs
-    if option.test_asan:
-        effective_jobs = min(option.jobs, 2)
-        if effective_jobs != option.jobs:
-            print(f"ASan testing detected, limiting jobs to {effective_jobs} to reduce memory usage")
-
     print(f"Jobs: {option.jobs}")
 
     if cheerp_flags:
@@ -301,7 +295,7 @@ if __name__ == "__main__":
             
             lit_params.extend(user_lit_params)
             
-            lit_options = ["-vv", f"-j{effective_jobs}"]
+            lit_options = ["-vv", f"-j{option.jobs}"]
             lit_options.append("--xunit-xml-output=litTestReport.xml")
             
             command = f"lit {' '.join(lit_options)} {' '.join(lit_params)} {test_args}"
@@ -333,7 +327,7 @@ if __name__ == "__main__":
             "--param PRE_EX=j",
             "--param REG=0",
             *user_lit_params,
-            "-j" + str(effective_jobs),
+            "-j" + str(option.jobs),
             test_args,
         ]
         command = " ".join(part for part in command_parts if part)
@@ -362,7 +356,7 @@ if __name__ == "__main__":
             "--param PRE_EX=a",
             "--param REG=0",  # Disable regular mode for preexec-only
             *user_lit_params,
-            "-j" + str(effective_jobs),
+            "-j" + str(option.jobs),
             test_args,
         ]
         command = " ".join(part for part in command_parts if part)
@@ -412,7 +406,7 @@ if __name__ == "__main__":
             # limit jobs for readable ir output
         else:
             lit_options.append("-vv")
-            lit_options.append(f"-j{effective_jobs}")
+            lit_options.append(f"-j{option.jobs}")
         
         # Add test report generation in xunit XML format
         # This creates litTestReport.xml which converts to .test format
@@ -483,7 +477,7 @@ if __name__ == "__main__":
                     if "OUTPUT_PREFIX" not in p:
                         lit_params.append(p)
                 files_part = " ".join(shlex.quote(str(p)) for p in sampled)
-                cmd = f"lit -vv -j{effective_jobs} {' '.join(lit_params)} {files_part}"
+                cmd = f"lit -vv -j{option.jobs} {' '.join(lit_params)} {files_part}"
                 result, elapsed = _run_timed(label, command=cmd, shell=True, print_cmd=option.print_cmd)
                 timings.append({"label": label, "seconds": elapsed})
                 print(f"[timing] {label}: {_format_duration(elapsed)}")
