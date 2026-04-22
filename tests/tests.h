@@ -10,6 +10,7 @@
 #include <string.h>
 #include <type_traits>
 #include <cctype>
+#include <string>
 #include <cheerp/types.h>
 #include <cheerp/client.h>
 
@@ -356,8 +357,16 @@ void assertEqual(const char *value, const char *expected, const char* msg)
 	}
 }
 
+inline void assertEqual(const std::string& value, const std::string& expected, const char* msg)
+{
+	if (value == expected)
+		__preexecute_print_case(msg, value);
+	else
+		__preexecute_print_case("FAILURE");
+}
+
 template<class T>
-void assertEqual(const T &value, const T &expected, const char* msg)
+void assertEqual(T value, T expected, const char* msg)
 {
 	if (!(value == expected)){
 		__preexecute_print_case("FAILURE");
