@@ -468,6 +468,7 @@ if __name__ == "__main__":
                     f"--param OPT_LEVEL={opt_level}",
                     f"--param TARGET={det_target_param}",
                     f"--param OUTPUT_PREFIX={shlex.quote(prefix)}",
+                    "--param COMPILE_ONLY=1",
                 ]
                 if cheerp_flags:
                     lit_params.append(f"--param CHEERP_FLAGS={shlex.quote(' '.join(cheerp_flags))}")
