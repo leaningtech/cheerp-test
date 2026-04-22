@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 
 import os
+import random
+import secrets
 import shlex
+import shutil
 import subprocess
 import sys
 import time
 import xml.etree.ElementTree as ET
 from optparse import OptionParser
+from pathlib import Path
 
 usage = "usage: %prog [options] [test_paths...]"
 parser = OptionParser(usage=usage)
@@ -22,13 +26,11 @@ parser.add_option("--wasm", dest="wasm", help="Run the tests in wasm mode",
 parser.add_option("--typescript", dest="typescript", help="Also generate .d.ts files", action="store_true", default=False)
 parser.add_option("--valgrind", dest="valgrind", help="Run with valgrind activated", action="store_true", default=False)
 parser.add_option("--preexecute", dest="preexecute", help="Run the tests inside PreExecuter", action="store_true", default=False)
-parser.add_option("--determinism", dest="determinism", help="Select the level of testing devoted to uncover non-deterministic behaviour", action="store", type="int", default=0)
-parser.add_option("--determinism-probability", dest="determinism_probability", help="Select the chance a given test is tested for determinism", action="store", type="float", default=0.1)
-parser.add_option("--determinism-only", dest="determinism_only", help="set to exclude non determinism tests(mainly added for use in ci)", action="store_true", default=False)
-parser.add_option("--determinism-exclude-dir",dest="determinism_exclude_dirs",help="Exclude directory (by name) from print-after determinism suite discovery; repeatable (e.g. --determinism-exclude-dir=threading)", action="append", default=[])
-parser.add_option("--determinism-wasm-binary-only", dest="determinism_wasm_binary_only", help="In determinism mode, compare only .wasm artifacts for wasm target (default)", action="store_true", default=True)
-parser.add_option("--determinism-wasm-compare-all-artifacts", dest="determinism_wasm_binary_only", help="In determinism mode, compare all artifacts for wasm target (loader + .wasm)", action="store_false")
-parser.add_option("--determinism-wasm-mode", dest="determinism_wasm_mode", help="Wasm determinism mode: strict (byte-identical) or functional (ignore import/export names)", action="store", default="strict")
+parser.add_option("--determinism", dest="determinism", help="After the regular run, recompile a sampled subset and diff artifacts to detect compiler non-determinism", action="store_true", default=False)
+parser.add_option("--determinism-probability", dest="determinism_probability", help="Probability (0-1) that each test is included in the determinism sample", action="store", type="float", default=0.1)
+parser.add_option("--determinism-only", dest="determinism_only", help="Skip the regular run and do two determinism passes (for CI)", action="store_true", default=False)
+parser.add_option("--determinism-exclude-dir", dest="determinism_exclude_dirs", help="Exclude directory name from determinism sampling; repeatable", action="append", default=[])
+parser.add_option("--determinism-seed", dest="determinism_seed", help="Seed string for the sampling RNG (auto-generated and printed if omitted)", action="store", default=None)
 parser.add_option("--preexecute-asmjs", dest="preexecute_asmjs", help="Run the tests inside PreExecuter in asmjs mode", action="store_true", default=False)
 parser.add_option("--all", dest="all", help="Run all the test kinds [genericjs/asmjs/wasm/preexecute]", action="store_true", default=False)
 parser.add_option("--pretty-code", dest="pretty_code", help="Compile with -cheerp-pretty-code", action="store_true", default=False)
@@ -119,6 +121,28 @@ def _collect_testcase_stats(xml_reports):
 
     return stats, per_test_times
 
+
+def _discover_and_sample(test_paths, probability, exclude_dirs, seed):
+    """Expand test_paths to .cpp/.c files and sample at probability using a seeded RNG."""
+    exclude = set(exclude_dirs)
+    candidates = []
+    for root in test_paths:
+        rp = Path(root)
+        if rp.is_file():
+            candidates.append(rp)
+        elif rp.is_dir():
+            for ext in ("*.cpp", "*.c"):
+                for p in rp.rglob(ext):
+                    if any(part in exclude for part in p.parts):
+                        continue
+                    candidates.append(p)
+    candidates = sorted(set(candidates))
+    probability = max(0.0, min(1.0, probability))
+    rng = random.Random(seed)
+    sampled = [p for p in candidates if rng.random() < probability]
+    return candidates, sampled
+
+
 if __name__ == "__main__":
     overall_t0 = time.perf_counter()
     timings = []  # list of dicts: {label, seconds}
@@ -131,10 +155,6 @@ if __name__ == "__main__":
     exit_code = 0
 
     opt_level = f"O{option.optlevel}"
-
-    option.determinism_wasm_mode = (option.determinism_wasm_mode or "strict").strip().lower()
-    if option.determinism_wasm_mode not in ("strict", "functional"):
-        parser.error("--determinism-wasm-mode must be either 'strict' or 'functional'")
 
     user_lit_params = []
     if option.compiler:
@@ -198,10 +218,8 @@ if __name__ == "__main__":
     print(f"Optimization level: -O{option.optlevel}")
     print(f"Target modes: {mode}")
     print(f"determinism only mode: {option.determinism_only}")
-    if option.determinism:
-        det_artifact_mode = '.wasm only' if option.determinism_wasm_binary_only else 'all artifacts'
-        print(f"Determinism wasm artifact mode: {det_artifact_mode}")
-        print(f"Determinism wasm comparison mode: {option.determinism_wasm_mode}")
+    if option.determinism or option.determinism_only:
+        print(f"Determinism enabled (probability={option.determinism_probability})")
     effective_jobs = option.jobs
     if option.test_asan:
         effective_jobs = min(option.jobs, 2)
@@ -230,7 +248,26 @@ if __name__ == "__main__":
         print("IR dumping: enabled")
 
     print("="*30 + "\n")
-    
+
+    # Wipe the output trees we're about to populate so stale artifacts from
+    # previous runs can't poison determinism comparisons (or mislead callers
+    # who grep Outputs/ looking at fresh results).
+    repo_root_abs = os.path.dirname(os.path.abspath(__file__))
+    base_prefix = option.prefix or ""
+    trees_to_clean: list[str] = []
+    if option.determinism_only:
+        trees_to_clean.append(f"Outputs-{base_prefix}-det-a" if base_prefix else "Outputs-det-a")
+        trees_to_clean.append(f"Outputs-{base_prefix}-det-b" if base_prefix else "Outputs-det-b")
+    else:
+        trees_to_clean.append(f"Outputs-{base_prefix}" if base_prefix else "Outputs")
+        if option.determinism:
+            trees_to_clean.append(f"Outputs-{base_prefix}-det" if base_prefix else "Outputs-det")
+    for tree in trees_to_clean:
+        tree_path = os.path.join(repo_root_abs, tree)
+        if os.path.isdir(tree_path):
+            print(f"Cleaning {tree}/")
+            shutil.rmtree(tree_path, ignore_errors=True)
+
     # Quick mode: run regular and preexec modes in a single lit invocation
     if option.quick_mode:
         if option.determinism_only:
@@ -394,91 +431,94 @@ if __name__ == "__main__":
         if result.returncode != 0:
             exit_code = result.returncode
     
-    if option.determinism:
+    if option.determinism or option.determinism_only:
         print("\n" + "="*60)
-        print("Running Determinism tests")
-        print(f"  Runs per test: {option.determinism}")
+        print("Running Determinism check")
         print(f"  Probability: {option.determinism_probability}")
         print("="*60 + "\n")
 
-        # Determinism compile-hash runs cover all selected targets.
-        determinism_targets = []
-        if "wasm" in original_mode:
-            determinism_targets.append("wasm")
-        if "asmjs" in original_mode:
-            determinism_targets.append("asmjs")
-        if "genericjs" in original_mode:
-            determinism_targets.append("js")
-        if not determinism_targets:
-            determinism_targets = ["wasm", "asmjs", "js"]
+        # Targets and flags for the determinism-specific lit invocation(s).
+        det_targets = []
+        if "wasm" in original_mode: det_targets.append("wasm")
+        if "asmjs" in original_mode: det_targets.append("asmjs")
+        if "genericjs" in original_mode: det_targets.append("js")
+        if not det_targets:
+            det_targets = ["wasm", "asmjs", "js"]
+        det_target_param = ",".join(det_targets)
 
-        print(f"Determinism testing targets: {','.join(determinism_targets)}")
-
-        # Compiler-only flags for determinism wrappers (strip pseudo-flags consumed by lit.cfg)
-        cheerp_flags_compiler_only = [flag for flag in cheerp_flags if flag not in ("-valgrind", "-asan")]
-        cheerp_flags_compiler_str = " ".join(cheerp_flags_compiler_only)
-
-        # Helper to run a determinism wrapper against either a suite dir or explicit files
-        def run_wrapper(wrapper_label: str, base_cmd: list[str], current_exit_code: int) -> int:
-            first_path = test_paths[0] if test_paths else "."
-            if os.path.isfile(first_path):
-                for test_file in test_paths:
-                    if not os.path.isfile(test_file):
-                        continue
-                    file_result, elapsed = _run_timed(
-                        f"{wrapper_label} ({os.path.basename(test_file)})",
-                        argv=base_cmd + [test_file],
-                        shell=False,
-                        print_cmd=option.print_cmd,
-                        capture_output=False,
-                        text=True,
-                    )
-                    timings.append({"label": f"{wrapper_label} ({os.path.basename(test_file)})", "seconds": elapsed})
-                    print(f"[timing] {wrapper_label} ({os.path.basename(test_file)}): {_format_duration(elapsed)}")
-                    if file_result.returncode != 0:
-                        current_exit_code = file_result.returncode
-            else:
-                result, elapsed = _run_timed(
-                    f"{wrapper_label} (suite={first_path})",
-                    argv=base_cmd + [f"--suite={first_path}"],
-                    shell=False,
-                    print_cmd=option.print_cmd,
-                    capture_output=False,
-                    text=True,
-                )
-                timings.append({"label": f"{wrapper_label} (suite={first_path})", "seconds": elapsed})
-                print(f"[timing] {wrapper_label} (suite={first_path}): {_format_duration(elapsed)}")
-                if result.returncode != 0:
-                    print(f"{wrapper_label} tests failed")
-                    current_exit_code = result.returncode
-            return current_exit_code
-
-        cmd_outputs = [
-            "python3",
-            "./helpers/determinism_wrapper_compile_only.py",
-            f"--runs={option.determinism}",
-            f"--probability={option.determinism_probability}",
-            f"--jobs={effective_jobs}",
-            f"--opt-level={opt_level}",
-        ]
-        if option.compiler:
-            cmd_outputs += ["--compiler", option.compiler]
-        if cheerp_flags_compiler_str:
-            cmd_outputs.append(f"--cheerp-flags={cheerp_flags_compiler_str}")
-        if option.test_asan:
-            cmd_outputs.append("--asan")
-        if determinism_targets:
-            cmd_outputs.append(f"--target={','.join(determinism_targets)}")
-        for excluded_dir in option.determinism_exclude_dirs:
-            cmd_outputs.append(f"--exclude-dir={excluded_dir}")
-        if option.determinism_wasm_binary_only:
-            cmd_outputs.append("--wasm-binary-only")
+        if option.determinism_seed is not None:
+            seed = option.determinism_seed
+            print(f"Determinism seed: {seed!r}")
         else:
-            cmd_outputs.append("--wasm-compare-all-artifacts")
-        cmd_outputs.append(f"--wasm-determinism-mode={option.determinism_wasm_mode}")
-        if option.print_cmd:
-            cmd_outputs.append("--print-cmd")
-        exit_code = run_wrapper("determinism(compile-hash)", cmd_outputs, exit_code)
+            seed = secrets.token_hex(8)
+            print(f"Determinism seed: {seed!r} (auto-generated; pass --determinism-seed={seed} to reproduce)")
+
+        candidates, sampled = _discover_and_sample(
+            test_paths,
+            option.determinism_probability,
+            option.determinism_exclude_dirs,
+            seed,
+        )
+        print(f"Determinism: sampled {len(sampled)}/{len(candidates)} tests")
+
+        if not sampled:
+            print("Determinism: empty sample, nothing to compare")
+        else:
+            tests_source_root = os.path.join(repo_root_abs, "tests")
+            def _tree_path(prefix: str) -> str:
+                return os.path.join(repo_root_abs, f"Outputs-{prefix}" if prefix else "Outputs")
+
+            def _run_det_pass(prefix: str, label: str) -> int:
+                """Run lit with OUTPUT_PREFIX=prefix over the sampled files."""
+                lit_params = [
+                    f"--param OPT_LEVEL={opt_level}",
+                    f"--param TARGET={det_target_param}",
+                    f"--param OUTPUT_PREFIX={shlex.quote(prefix)}",
+                ]
+                if cheerp_flags:
+                    lit_params.append(f"--param CHEERP_FLAGS={shlex.quote(' '.join(cheerp_flags))}")
+                # Inherit user-supplied COMPILER/CHEERP_PREFIX/etc, but drop any OUTPUT_PREFIX
+                # from user_lit_params since we're overriding it.
+                for p in user_lit_params:
+                    if "OUTPUT_PREFIX" not in p:
+                        lit_params.append(p)
+                files_part = " ".join(shlex.quote(str(p)) for p in sampled)
+                cmd = f"lit -vv -j{effective_jobs} {' '.join(lit_params)} {files_part}"
+                result, elapsed = _run_timed(label, command=cmd, shell=True, print_cmd=option.print_cmd)
+                timings.append({"label": label, "seconds": elapsed})
+                print(f"[timing] {label}: {_format_duration(elapsed)}")
+                return result.returncode
+
+            if option.determinism_only:
+                prefix_a = f"{base_prefix}-det-a" if base_prefix else "det-a"
+                prefix_b = f"{base_prefix}-det-b" if base_prefix else "det-b"
+                rc_a = _run_det_pass(prefix_a, "lit (determinism pass A)")
+                rc_b = _run_det_pass(prefix_b, "lit (determinism pass B)")
+                if rc_a or rc_b:
+                    print("Warning: one or more determinism passes had non-zero exit; comparator will still run")
+                tree_a = _tree_path(prefix_a)
+                tree_b = _tree_path(prefix_b)
+            else:
+                det_prefix = f"{base_prefix}-det" if base_prefix else "det"
+                rc = _run_det_pass(det_prefix, "lit (determinism pass)")
+                if rc:
+                    print("Warning: determinism pass had non-zero exit; comparator will still run")
+                tree_a = _tree_path(base_prefix)
+                tree_b = _tree_path(det_prefix)
+
+            compare_cmd = [
+                "python3", "./helpers/determinism_check.py",
+                "--tree-a", tree_a,
+                "--tree-b", tree_b,
+                "--source-root", tests_source_root,
+                "--failures-dir", os.path.join(repo_root_abs, "determinism_failures_compile_only"),
+                *[str(p) for p in sampled],
+            ]
+            result, elapsed = _run_timed("determinism compare", argv=compare_cmd, shell=False, print_cmd=option.print_cmd)
+            timings.append({"label": "determinism compare", "seconds": elapsed})
+            print(f"[timing] determinism compare: {_format_duration(elapsed)}")
+            if result.returncode != 0:
+                exit_code = result.returncode
     
     # Collect all XML reports that were generated
     xml_reports = []

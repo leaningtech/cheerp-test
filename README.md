@@ -119,27 +119,24 @@ python3 run_lit_tests.py --quick --wasm --asmjs .
 
 #### Determinism testing
 
-Determinism tests verify that the compiler produces identical output across multiple runs:
+Determinism checks verify that the compiler produces identical output when it compiles the same test twice. They work by running lit a second time over a sampled subset of tests into `Outputs-det/`, then byte-diffing those artifacts against the ones from the regular run in `Outputs/`. Mismatches are copied to `determinism_failures_compile_only/` for inspection.
+
+Sampling uses a seeded RNG. If `--determinism-seed` isn't passed, a seed is auto-generated and printed so you can reproduce a given run's sample by passing it back.
 
 ```bash
-# Run determinism checks (5 runs per test, 20% probability)
-python3 run_lit_tests.py --determinism 5 --determinism-probability 0.2 .
+# Enable the determinism check (20% of tests sampled, fresh seed per run)
+python3 run_lit_tests.py --determinism --determinism-probability 0.2 tests
 
-# Determinism only (skip regular test execution)
-python3 run_lit_tests.py --determinism 5 --determinism-only .
+# Reproduce a specific run by passing back the seed it printed
+python3 run_lit_tests.py --determinism --determinism-seed=abcdef1234567890 tests
 
-# Exclude specific directories from determinism testing
-python3 run_lit_tests.py --determinism 5 \
+# Determinism only (skip the regular run; do two determinism passes A/B)
+python3 run_lit_tests.py --determinism-only tests
+
+# Exclude specific directories from sampling
+python3 run_lit_tests.py --determinism \
   --determinism-exclude-dir threading \
-  --determinism-exclude-dir dom .
-
-# WebAssembly determinism modes
-# - strict: byte-identical comparison (default)
-# - functional: ignore import/export names
-python3 run_lit_tests.py --determinism 5 --determinism-wasm-mode functional .
-
-# Compare all wasm artifacts (loader + .wasm) instead of just .wasm
-python3 run_lit_tests.py --determinism 5 --determinism-wasm-compare-all-artifacts .
+  --determinism-exclude-dir dom tests
 ```
 
 #### Compiler flags and features
@@ -476,19 +473,16 @@ Options:
   --valgrind            Run with valgrind activated
   
   Determinism testing:
-  --determinism N       Level of determinism testing (number of runs per test)
+  --determinism         Recompile a sampled subset after the regular run and
+                        diff artifacts; reports pass/fail per test
   --determinism-probability P
-                        Probability that a test is tested for determinism (0.0-1.0)
-  --determinism-only    Exclude non-determinism tests (for CI)
+                        Probability that a test is included in the sample (0.0-1.0)
+  --determinism-only    Skip the regular run; do two determinism passes A/B
   --determinism-exclude-dir DIR
-                        Exclude directory from determinism suite (repeatable)
-  --determinism-wasm-mode MODE
-                        Wasm determinism mode: 'strict' (byte-identical) or 
-                        'functional' (ignore import/export names)
-  --determinism-wasm-binary-only
-                        Compare only .wasm artifacts (default)
-  --determinism-wasm-compare-all-artifacts
-                        Compare all wasm artifacts (loader + .wasm)
+                        Exclude directory name from sampling (repeatable)
+  --determinism-seed STR
+                        Seed string for the sampling RNG (auto-generated
+                        and printed if omitted)
   
   Debugging:
   --keep                Don't delete log files for individual tests
@@ -539,7 +533,7 @@ When adding a new test to the suite:
 
 8. **Check determinism** for compiler changes:
    ```bash
-   python3 run_lit_tests.py --determinism 5 path/to/your/test.cpp
+   python3 run_lit_tests.py --determinism --determinism-probability 1.0 path/to/your/test.cpp
    ```
 
 9. **Document non-obvious behavior** in comments within the test file
