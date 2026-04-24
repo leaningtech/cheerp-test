@@ -4,28 +4,23 @@
 // Test 64-bit integer arithmetics
 
 // RUN: mkdir -p %t
-// RUN: %regular_only %run_if_js %compile_mode_js -cheerp-use-bigints -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck --check-prefixes=CHECK,CHECK-REG %s
-// RUN: %regular_only %run_if_wasm %compile_mode_wasm -cheerp-use-bigints -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck --check-prefixes=CHECK,CHECK-REG %s
-// RUN: %regular_only %run_if_asmjs %compile_mode_asmjs -cheerp-use-bigints -o %t/a %s 2>&1 && node %t/a 2>&1 | %FileCheck --check-prefixes=CHECK,CHECK-REG %s
+// RUN: %regular_only %run_if_js %compile_mode_js -cheerp-use-bigints -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_wasm %compile_mode_wasm -cheerp-use-bigints -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_asmjs %compile_mode_asmjs -cheerp-use-bigints -o %t/a %s 2>&1 && node %t/a 2>&1 | %FileCheck %s
 // RUN: %preexec_only %run_if_js %compile_mode_js -cheerp-use-bigints -o %t/j %s 2>&1 | %FileCheck %s
 // RUN: %preexec_only %run_if_asmjs %compile_mode_asmjs -cheerp-use-bigints -o %t/a %s 2>&1 | %FileCheck %s
 
 #include <tests.h>
 #include <stdarg.h>
 
-// TODO: fix dump output
-
 // Test 64-bit integer arithmetics
-#ifndef PRE_EXECUTE_TEST
 template <typename T>
 static void dump(const T& t) {
 	long h = (long)(t >> 32);
 	long l = (long)(t & 0xffffffff);
 	assertPrint("highint h:", Hex(h));
 	assertPrint("highint l:", Hex(l));
-	// cheerp::console_log("highint h:", h, "l:", l);
 }
-#endif
 
 void testRepresentation() {
 	assertPrint("int64_t representation 1/N:", Hex((unsigned long long)0));
@@ -726,26 +721,17 @@ static void testVaarg()
 	// assertEqual(sum, (T)0x1deadbeef, "int64_t vaarg support 1/1");
 }
 
-#ifndef PRE_EXECUTE_TEST
-static void testDump() {
-	long long t = unitBlackBox(0xff000000ff000000);
-	cheerp::console_log("test dump(0xff000000ff000000):");
-	dump(t);
-}
-#endif
-
 void webMain() {
 	testRepresentation();
 	//CHECK: int64_t representation 1/N: 0x0
 	//CHECK: int64_t representation 2/N: -0x1
 	//CHECK: int64_t representation 3/N: 0xffffffffffffffff
 	//CHECK: int64_t representation 4/N: 0x7fffffffffffffff
-#ifndef PRE_EXECUTE_TEST
-	testDump();
-	//CHECK-REG: test dump(0xff000000ff000000):
-	//CHECK-REG: highint h: -0x1000000
-	//CHECK-REG: highint l: -0x1000000
-#endif
+
+	dump((long long)unitBlackBox(0xff000000ff000000));
+	//CHECK: highint h: -0x1000000
+	//CHECK: highint l: -0x1000000
+
 	testShiftOps<long long>();
 	//CHECK: int64_t shl support 1/N: 0x10000
 	//CHECK: int64_t shl support 2/N: 0x1000000
