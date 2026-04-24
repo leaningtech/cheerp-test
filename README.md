@@ -258,8 +258,9 @@ When using `--prefix <name>` (or `--param OUTPUT_PREFIX=<name>`), the output tre
 Tests are C/C++ source files (`.c`, `.cpp`) with special RUN directives in comments that tell lit how to compile and verify the test:
 
 ```cpp
-// RUN: %compile_mode_js %s -o %t/j && %then_run_js | %FileCheck %s
-// RUN: %compile_mode_wasm %s -o %t/w && %then_run_wasm | %FileCheck %s
+// RUN: mkdir -p %t
+// RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_wasm %compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
 
 #include <cheerp/clientlib.h>
 
@@ -295,60 +296,45 @@ Use these substitutions in RUN directives to compile for specific targets:
 | `%compile_mode_wasm` | Compile for WebAssembly target |
 | `%compile_mode_asmjs` | Compile for asm.js target |
 
-For explicit mode control (combined regular + preexec mode):
-
-| Macro | Description |
-|-------|-------------|
-| `%compile_mode_regular_js` | Compile for js in regular mode only |
-| `%compile_mode_regular_wasm` | Compile for wasm in regular mode only |
-| `%compile_mode_regular_asmjs` | Compile for asmjs in regular mode only |
-| `%compile_mode_preexec_js` | Compile for js in preexec mode only |
-| `%compile_mode_preexec_asmjs` | Compile for asmjs in preexec mode only |
+In combined mode (regular + preexec), these are context-aware: a `%compile_mode_<target>` on a line prefixed with `%regular_only` expands to the regular compile command, and on a line prefixed with `%preexec_only` it expands to the preexec compile command.
 
 ### Run macros
 
-After compilation, use these to execute the generated code:
-
 | Macro | Description |
 |-------|-------------|
-| `%then_run_js` | Run genericjs output with node |
-| `%then_run_wasm` | Run WebAssembly output with node |
-| `%then_run_asmjs` | Run asm.js output with node |
-| `%then_run_regular_js` | Run js output (regular mode only) |
-| `%then_run_regular_wasm` | Run wasm output (regular mode only) |
-| `%then_run_regular_asmjs` | Run asmjs output (regular mode only) |
-| `%then_run_preexec_js` | Run js output (preexec mode - usually no-op) |
-| `%then_run_preexec_asmjs` | Run asmjs output (preexec mode - usually no-op) |
+| `%then_run_js` | Expands to `&& node %t/j` in regular mode; empty in preexec-only mode |
 
-**Note:** In preexecution mode, the compiler itself executes the code during compilation and outputs CHECK-able results to stderr, so `%then_run_preexec_*` macros typically resolve to no-op.
+Most tests inline `&& node %t/X` directly instead of using a run macro.
+
+**Note:** In preexecution mode the compiler executes the code during compilation and emits CHECK-able output on stderr, so no separate run step is needed.
 
 ### Mode-specific test lines
 
-When writing tests that behave differently in regular vs preexecution mode, use these prefixes:
+When writing tests that behave differently in regular vs preexecution mode, prefix RUN lines with `%regular_only` or `%preexec_only`:
 
 ```cpp
 // Regular mode: compile and run with node
-// RUN: regular_only %compile_mode_js %s -o %t/j %then_run_regular_js | %FileCheck %s
+// RUN: %regular_only %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
 
 // Preexec mode: compiler executes during compilation
-// RUN: preexec_only %compile_mode_js %s -o %t/j %then_run_preexec_js 2>&1 | %FileCheck %s
+// RUN: %preexec_only %compile_mode_js -o %t/j %s 2>&1 | %FileCheck %s
 ```
 
-The `regular_only` and `preexec_only` prefixes control which lines execute based on the test mode:
+The `%regular_only` and `%preexec_only` prefixes control which lines execute based on the test mode:
 - **Combined mode** (`REG=1 PRE_EX=1`): Both types of lines execute
-- **Regular-only mode** (default): Only `regular_only` lines execute
-- **Preexec-only mode** (`REG=0 PRE_EX=j/a`): Only `preexec_only` lines execute
+- **Regular-only mode** (default): Only `%regular_only` lines execute
+- **Preexec-only mode** (`REG=0 PRE_EX=j/a`): Only `%preexec_only` lines execute
 
 ### Conditional execution by target
 
-Use `run_if_<target>` to execute commands only when a specific target is enabled:
+Use `%run_if_<target>` to execute commands only when a specific target is enabled:
 
 ```cpp
-// RUN: run_if_wasm %compile_mode_wasm %s -o %t/w && node %t/w
-// RUN: run_if_js %compile_mode_js %s -o %t/j && node %t/j
+// RUN: %run_if_wasm %compile_mode_wasm -o %t/w %s && node %t/w
+// RUN: %run_if_js %compile_mode_js -o %t/j %s && node %t/j
 ```
 
-If the target is disabled, the entire line is replaced with `true` (no-op).
+If the target is disabled, the entire RUN line is replaced with `true` (no-op).
 
 ### Other substitutions
 
@@ -384,13 +370,14 @@ void webMain() {
 ### Example test template
 
 ```cpp
-// RUN: %compile_mode_js %s -o %t/j %then_run_js | %FileCheck %s
-// RUN: %compile_mode_wasm %s -o %t/w %then_run_wasm | %FileCheck %s
-// RUN: %compile_mode_asmjs %s -o %t/a %then_run_asmjs | %FileCheck %s
+// RUN: mkdir -p %t
+// RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_wasm %compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_asmjs %compile_mode_asmjs -o %t/a %s 2>&1 && node %t/a 2>&1 | %FileCheck %s
+// RUN: %preexec_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 | %FileCheck %s
+// RUN: %preexec_only %run_if_asmjs %compile_mode_asmjs -o %t/a %s 2>&1 | %FileCheck %s
 
 #include <cheerp/clientlib.h>
-
-// Test description: verify basic console output functionality
 
 void webMain() {
     // CHECK: Test output: 123
@@ -503,8 +490,9 @@ When adding a new test to the suite:
 
 3. **Add RUN directives** at the top:
    ```cpp
-   // RUN: %compile_mode_js %s -o %t/j %then_run_js | %FileCheck %s
-   // RUN: %compile_mode_wasm %s -o %t/w %then_run_wasm | %FileCheck %s
+   // RUN: mkdir -p %t
+   // RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
+   // RUN: %regular_only %run_if_wasm %compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
    ```
 
 4. **Add REQUIRES directives** if your test needs specific features:

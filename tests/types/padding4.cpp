@@ -6,8 +6,8 @@
 
 // RUN: mkdir -p %t
 
-// RUN: regular_only run_if_js compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
-// RUN: regular_only run_if_wasm compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_wasm %compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
 
 #include <tests.h>
 #include <vector>

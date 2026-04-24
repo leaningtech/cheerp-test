@@ -6,8 +6,8 @@
 
 // RUN: mkdir -p %t
 
-// RUN: regular_only run_if_js compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck --check-prefixes=CHECK,CHECK_JS %s
-// RUN: regular_only run_if_wasm compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck --check-prefixes=CHECK,CHECK_WASM %s
+// RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck --check-prefixes=CHECK,CHECK_JS %s
+// RUN: %regular_only %run_if_wasm %compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck --check-prefixes=CHECK,CHECK_WASM %s
 
 
 #include <tests.h>

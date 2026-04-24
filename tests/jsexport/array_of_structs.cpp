@@ -6,33 +6,33 @@
 // REQUIRES: regular
 
 // Test vanilla module
-// RUN: regular_only run_if_js compile_mode_js -o %t/vanilla.js %s 2>&1
-// RUN: regular_only run_if_js python3 %helpers/create_driver.py %t/vanilla.js %S/array_of_structs.testing.js %t/vanilla_driver.js --module=vanilla
-// RUN: regular_only run_if_js %node %t/vanilla_driver.js 2>&1 | %FileCheck %s --check-prefixes=CHECK,CHECK-REGULAR
+// RUN: %regular_only %run_if_js %compile_mode_js -o %t/vanilla.js %s 2>&1
+// RUN: %regular_only %run_if_js python3 %helpers/create_driver.py %t/vanilla.js %S/array_of_structs.testing.js %t/vanilla_driver.js --module=vanilla
+// RUN: %regular_only %run_if_js %node %t/vanilla_driver.js 2>&1 | %FileCheck %s --check-prefixes=CHECK,CHECK-REGULAR
 
 // Test ES6 module
-// RUN: regular_only run_if_js compile_mode_js -cheerp-make-module=es6 -o %t/es6.mjs %s 2>&1
-// RUN: regular_only run_if_js python3 %helpers/create_driver.py %t/es6.mjs %S/array_of_structs.testing.js %t/es6_driver.mjs --module=es6
-// RUN: regular_only run_if_js %node %t/es6_driver.mjs 2>&1 | %FileCheck %s --check-prefixes=CHECK,CHECK-REGULAR
+// RUN: %regular_only %run_if_js %compile_mode_js -cheerp-make-module=es6 -o %t/es6.mjs %s 2>&1
+// RUN: %regular_only %run_if_js python3 %helpers/create_driver.py %t/es6.mjs %S/array_of_structs.testing.js %t/es6_driver.mjs --module=es6
+// RUN: %regular_only %run_if_js %node %t/es6_driver.mjs 2>&1 | %FileCheck %s --check-prefixes=CHECK,CHECK-REGULAR
 
 // Test CommonJS module
-// RUN: regular_only run_if_js compile_mode_js -cheerp-make-module=commonjs -o %t/commonjs.js %s 2>&1
-// RUN: regular_only run_if_js python3 %helpers/create_driver.py %t/commonjs.js %S/array_of_structs.testing.js %t/commonjs_driver.js --module=commonjs
-// RUN: regular_only run_if_js %node %t/commonjs_driver.js 2>&1 | %FileCheck %s --check-prefixes=CHECK,CHECK-REGULAR
+// RUN: %regular_only %run_if_js %compile_mode_js -cheerp-make-module=commonjs -o %t/commonjs.js %s 2>&1
+// RUN: %regular_only %run_if_js python3 %helpers/create_driver.py %t/commonjs.js %S/array_of_structs.testing.js %t/commonjs_driver.js --module=commonjs
+// RUN: %regular_only %run_if_js %node %t/commonjs_driver.js 2>&1 | %FileCheck %s --check-prefixes=CHECK,CHECK-REGULAR
 
 // Test Closure module
-// RUN: regular_only run_if_js compile_mode_js -cheerp-make-module=closure -o %t/closure.js %s 2>&1
-// RUN: regular_only run_if_js python3 %helpers/create_driver.py %t/closure.js %S/array_of_structs.testing.js %t/closure_driver.js --module=closure
-// RUN: regular_only run_if_js %node %t/closure_driver.js 2>&1 | %FileCheck %s --check-prefixes=CHECK,CHECK-REGULAR
+// RUN: %regular_only %run_if_js %compile_mode_js -cheerp-make-module=closure -o %t/closure.js %s 2>&1
+// RUN: %regular_only %run_if_js python3 %helpers/create_driver.py %t/closure.js %S/array_of_structs.testing.js %t/closure_driver.js --module=closure
+// RUN: %regular_only %run_if_js %node %t/closure_driver.js 2>&1 | %FileCheck %s --check-prefixes=CHECK,CHECK-REGULAR
 
 // Also test wasm and asmjs with vanilla driver:
-// RUN: regular_only run_if_wasm compile_mode_wasm -o %t/w %s 2>&1
-// RUN: regular_only run_if_wasm python3 %helpers/create_driver.py %t/w %S/array_of_structs.testing.js %t/w_driver.js --module=vanilla
-// RUN: regular_only run_if_wasm %node %t/w_driver.js 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_wasm %compile_mode_wasm -o %t/w %s 2>&1
+// RUN: %regular_only %run_if_wasm python3 %helpers/create_driver.py %t/w %S/array_of_structs.testing.js %t/w_driver.js --module=vanilla
+// RUN: %regular_only %run_if_wasm %node %t/w_driver.js 2>&1 | %FileCheck %s
 
-// RUN: regular_only run_if_asmjs compile_mode_asmjs -o %t/a %s 2>&1
-// RUN: regular_only run_if_asmjs python3 %helpers/create_driver.py %t/a %S/array_of_structs.testing.js %t/a_driver.js --module=vanilla
-// RUN: regular_only run_if_asmjs %node %t/a_driver.js 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_asmjs %compile_mode_asmjs -o %t/a %s 2>&1
+// RUN: %regular_only %run_if_asmjs python3 %helpers/create_driver.py %t/a %S/array_of_structs.testing.js %t/a_driver.js --module=vanilla
+// RUN: %regular_only %run_if_asmjs %node %t/a_driver.js 2>&1 | %FileCheck %s
 
 #include <iostream>
 #include <cheerp/client.h>

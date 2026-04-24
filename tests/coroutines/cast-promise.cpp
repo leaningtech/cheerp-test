@@ -6,7 +6,7 @@
 // REQUIRES: js, regular
 
 // RUN: mkdir -p %t
-// RUN: regular_only run_if_js compile_mode_js -std=c++20 -o %t/j %s 2>&1 | %FileCheck %s
+// RUN: %regular_only %run_if_js %compile_mode_js -std=c++20 -o %t/j %s 2>&1 | %FileCheck %s
 
 #include <coroutine>
 

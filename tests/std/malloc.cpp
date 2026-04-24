@@ -45,7 +45,7 @@
 // REQUIRES: asmjs
 
 // RUN: mkdir -p %t
-// RUN: regular_only run_if_asmjs compile_mode_asmjs -o %t/a %s 2>&1 && node %t/a 2>&1| %FileCheck %s
+// RUN: %regular_only %run_if_asmjs %compile_mode_asmjs -o %t/a %s 2>&1 && node %t/a 2>&1| %FileCheck %s
 
 #include <stdio.h>
 #include <stdlib.h>

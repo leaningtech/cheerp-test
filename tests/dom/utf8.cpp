@@ -5,7 +5,7 @@
 // REQUIRES: js, regular
 
 // RUN: mkdir -p %t
-// RUN: regular_only run_if_js compile_mode_js -o %t/j %s 2>&1 && node %t/j | %FileCheck %s
+// RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j | %FileCheck %s
 
 #include <tests.h>
 #include <cheerp/client.h>
