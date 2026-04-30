@@ -13,17 +13,17 @@ This repository contains the Cheerp lit-based test suite for validating the Chee
 ## Quick Start
 
 ```bash
-# Run everything with default targets (wasm, asmjs, genericjs)
+# Run everything with default targets (wasm, asmjs, genericjs) in regular mode
 python3 run_lit_tests.py
 
 # Run a specific directory
-python3 run_lit_tests.py /unit/jsexport
+python3 run_lit_tests.py tests/jsexport
 
 # Run a single test
-python3 run_lit_tests.py tests/memory/test1.cpp
+python3 run_lit_tests.py tests/memory/kinds.cpp
 
-# Debug a failing test (keeps logs)
-python3 run_lit_tests.py --keep --prefix debug tests/memory/test1.cpp
+# Debug a failing test (keeps logs, separate output tree)
+python3 run_lit_tests.py --keep --prefix debug tests/memory/kinds.cpp
 ```
 
 ## Recommended way to run tests
@@ -32,7 +32,7 @@ Use `run_lit_tests.py`.
 
 This is the **preferred and safer** interface because it:
 - translates high-level options into the correct lit parameters,
-- keeps target/mode selection consistent,
+- runs one lit invocation per `(target, mode)` combination,
 - handles preexecute and determinism flows,
 - generates merged test reports (`litTestReport.test`).
 
@@ -47,31 +47,32 @@ python3 run_lit_tests.py --help
 #### Basic test runs
 
 ```bash
-# Default targets (wasm, asmjs, genericjs) on the whole suite
-python3 run_lit_tests.py --suite ./cheerp-test
+# Default targets (wasm, asmjs, genericjs) in regular mode
+python3 run_lit_tests.py
 
 # Run a specific subtree
-python3 run_lit_tests.py /memory
+python3 run_lit_tests.py tests/memory
 
 # Run a single test
-python3 run_lit_tests.py tests/memory/test1.cpp
+python3 run_lit_tests.py tests/memory/kinds.cpp
 
-# Run with all targets and modes (equivalent to --wasm --asmjs --genericjs --preexecute --preexecute-asmjs)
-python3 run_lit_tests.py --all .
+# Run all (target, mode) combos: js/wasm/asmjs in both regular and preexec
+# (wasm preexec is always skipped)
+python3 run_lit_tests.py --all
 ```
 
 #### Target selection
 
 ```bash
 # Select targets explicitly
-python3 run_lit_tests.py --wasm --asmjs /unit
-python3 run_lit_tests.py --genericjs /unit/jsexport
+python3 run_lit_tests.py --wasm --asmjs tests
+python3 run_lit_tests.py --genericjs tests/jsexport
 
 # WebAssembly only
-python3 run_lit_tests.py --wasm .
+python3 run_lit_tests.py --wasm
 
 # All linear-memory targets
-python3 run_lit_tests.py --wasm --asmjs .
+python3 run_lit_tests.py --wasm --asmjs
 ```
 
 #### Compiler and optimization
@@ -80,321 +81,283 @@ python3 run_lit_tests.py --wasm --asmjs .
 # Use a non-default compiler installation
 python3 run_lit_tests.py \
   --compiler /opt/cheerp2/bin/clang++ \
-  --cheerp-prefix /opt/cheerp2 \
-  tests
+  --cheerp-prefix /opt/cheerp2
 
 # Parallel jobs and optimization level
-python3 run_lit_tests.py -j8 -O2 .
+python3 run_lit_tests.py -j8 -O2
 
 # Test with optimization level O3
-python3 run_lit_tests.py -O3 /unit
+python3 run_lit_tests.py -O3 tests
 ```
 
-#### Preexecute modes
+#### Preexecute mode
 
 ```bash
-# Preexecute (wasm/js target)
-python3 run_lit_tests.py --preexecute .
+# Add preexec mode on top of the selected targets (skipping wasm preexec)
+python3 run_lit_tests.py --preexecute
 
-# Preexecute asmjs target
-python3 run_lit_tests.py --preexecute-asmjs .
+# Preexec for js only
+python3 run_lit_tests.py --genericjs --preexecute
 
-# Both preexecute modes
-python3 run_lit_tests.py --preexecute --preexecute-asmjs .
+# Preexec for asmjs only
+python3 run_lit_tests.py --asmjs --preexecute
 ```
 
-#### Quick mode (efficient combined testing)
-
-Quick mode runs regular and preexecution modes in a single lit invocation, reducing overhead:
-
-```bash
-# Run all modes in parallel (regular + preexec)
-python3 run_lit_tests.py --quick .
-
-# Quick mode with specific targets
-python3 run_lit_tests.py --quick --wasm --asmjs .
-```
-
-**Note:** Quick mode is ignored when `--determinism-only` is set.
+There is one lit invocation per `(target, mode)` combination — preexec is just an extra mode rather than a separate set of flags.
 
 #### Determinism testing
 
-Determinism checks verify that the compiler produces identical output when it compiles the same test twice. They work by running lit a second time over a sampled subset of tests into `Outputs-det/`, then byte-diffing those artifacts against the ones from the regular run in `Outputs/`. Mismatches are copied to `determinism_failures_compile_only/` for inspection.
+Determinism checks verify that the compiler produces identical output when it compiles the same test twice. They work by re-running lit a second time over a sampled subset of tests with `COMPILE_ONLY=1` into `Outputs-det/`, then byte-diffing those artifacts against the ones from the regular run in `Outputs/`. Mismatches are copied to `determinism_failures_compile_only/` for inspection.
 
-Sampling uses a seeded RNG. If `--determinism-seed` isn't passed, a seed is auto-generated and printed so you can reproduce a given run's sample by passing it back.
+The check is repeated per `(target, mode)` combination so that a determinism issue surfaces as a `(target, mode, file)` triple. Sampling uses a seeded RNG; if `--determinism-seed` isn't passed, a seed is auto-generated and printed so you can reproduce a given run's sample.
 
 ```bash
 # Enable the determinism check (20% of tests sampled, fresh seed per run)
-python3 run_lit_tests.py --determinism --determinism-probability 0.2 tests
+python3 run_lit_tests.py --determinism --determinism-probability 0.2
 
 # Reproduce a specific run by passing back the seed it printed
-python3 run_lit_tests.py --determinism --determinism-seed=abcdef1234567890 tests
+python3 run_lit_tests.py --determinism --determinism-seed=abcdef1234567890
 
-# Determinism only (skip the regular run; do two determinism passes A/B)
-python3 run_lit_tests.py --determinism-only tests
+# Determinism only (skip the regular run; do two determinism passes A/B per combo)
+python3 run_lit_tests.py --determinism-only
 
 # Exclude specific directories from sampling
 python3 run_lit_tests.py --determinism \
   --determinism-exclude-dir threading \
-  --determinism-exclude-dir dom tests
+  --determinism-exclude-dir dom
 ```
 
 #### Compiler flags and features
 
 ```bash
 # Pretty-printed output
-python3 run_lit_tests.py --pretty-code .
+python3 run_lit_tests.py --pretty-code
 
 # Disable LTO
-python3 run_lit_tests.py --no-lto .
+python3 run_lit_tests.py --no-lto
 
 # Generate TypeScript definitions
-python3 run_lit_tests.py --typescript .
+python3 run_lit_tests.py --typescript
 
 # AddressSanitizer (only for wasm/asmjs targets)
-python3 run_lit_tests.py --asan --wasm --asmjs .
+python3 run_lit_tests.py --asan --wasm --asmjs
 
 # High memory mode (heap start at 2GB)
-python3 run_lit_tests.py --himem --wasm .
+python3 run_lit_tests.py --himem --wasm
 
 # Run with valgrind
-python3 run_lit_tests.py --valgrind .
+python3 run_lit_tests.py --valgrind
 ```
 
 #### Debugging and diagnostics
 
 ```bash
 # Keep log files for failed tests
-python3 run_lit_tests.py --keep .
+python3 run_lit_tests.py --keep
 
-# Save test outputs with prefix
-python3 run_lit_tests.py --prefix mybuild .
+# Save outputs into Outputs-mybuild/ instead of Outputs/
+python3 run_lit_tests.py --prefix mybuild
 
 # Print commands as they're executed
-python3 run_lit_tests.py --print-cmd .
+python3 run_lit_tests.py --print-cmd
 
 # Print test statistics summary
-python3 run_lit_tests.py --print-stats .
+python3 run_lit_tests.py --print-stats
 
 # Show per-test timing information
-python3 run_lit_tests.py --time .
+python3 run_lit_tests.py --time
 
 # Dump LLVM IR after each pass
-python3 run_lit_tests.py --ir /unit/memory
+python3 run_lit_tests.py --ir tests/memory
 ```
 
 ## Direct lit usage (advanced)
 
-Direct `lit` invocation is supported, but is less forgiving and easier to misconfigure.
-Use this when you need fine-grained lit control.
+Direct `lit` invocation is supported, but is less forgiving and easier to misconfigure. Use this when you need fine-grained lit control.
 
-From the repository root:
+A lit invocation pins exactly one `(target, mode)` combination — both `TARGET` and `MODE` are required.
 
 ```bash
-# Basic run
-lit tests
+# Single target, regular mode
+lit --param TARGET=wasm --param MODE=regular tests
 
 # Verbose + parallel
-lit -v -j8 tests/unit/memory
+lit -v -j8 --param TARGET=wasm --param MODE=regular tests/memory
 
 # Single test
-lit -v tests/unit/jsexport/namespaces.cpp
+lit -v --param TARGET=js --param MODE=regular tests/jsexport/namespaces.cpp
 
-# Target selection (IMPORTANT: parameter name is TARGET)
-lit --param TARGET=js tests/unit/jsexport
-lit --param TARGET=wasm,asmjs tests/unit
+# Preexec mode (wasm + preexec is rejected)
+lit --param TARGET=js --param MODE=preexec tests
+lit --param TARGET=asmjs --param MODE=preexec tests
 
 # Compiler and prefix override
 lit \
+  --param TARGET=wasm --param MODE=regular \
   --param COMPILER=/opt/cheerp2/bin/clang++ \
   --param CHEERP_PREFIX=/opt/cheerp2 \
   tests
 
 # Extra compile options
-lit --param OPT_LEVEL=O2 --param CHEERP_FLAGS='-cheerp-pretty-code' ./std/test1.cpp
-
-# Combined regular + preexec mode
-lit --param TARGET=wasm,js --param REG=1 --param PRE_EX=1 tests
-
-# Preexec-only mode
-lit --param TARGET=js --param REG=0 --param PRE_EX=j tests
+lit --param TARGET=js --param MODE=regular \
+    --param OPT_LEVEL=O2 --param CHEERP_FLAGS='-cheerp-pretty-code' tests/std
 ```
 
 ## Key lit parameters used by this suite
 
 | Parameter | Description | Example Values |
 |-----------|-------------|----------------|
-| `TARGET` | Comma-separated targets to test | `js`, `wasm`, `asmjs`, `wasm,asmjs` |
+| `TARGET` | Single target to test (required) | `js`, `wasm`, `asmjs` |
+| `MODE` | Compile mode (required) | `regular`, `preexec` |
 | `OPT_LEVEL` | Optimization level | `O0`, `O1`, `O2`, `O3` |
 | `CHEERP_FLAGS` | Additional compiler flags | `-cheerp-pretty-code` |
 | `EXTRA_FLAGS` | Extra flags appended to compile commands | Any compiler flags |
-| `PRE_EX` | Preexecute mode | `0` (off), `j` (js), `a` (asmjs), `1` (both) |
-| `REG` | Regular mode enable/disable | `0` (off), `1` (on, default) |
 | `COMPILER` | Compiler alias/path | `cheerp`, `local`, or explicit path |
 | `CHEERP_PREFIX` | Toolchain prefix | `/opt/cheerp`, `/opt/altcompiler` |
 | `KEEP_LOGS` | Keep individual test logs | `0`, `1` |
-| `OUTPUT_PREFIX` | Prefix for saved outputs | Any string |
+| `OUTPUT_PREFIX` | Prefix for the output tree | Any string |
 | `PRINT_STATS` | Print test statistics | `0`, `1` |
 | `TIME_TESTS` | Per-test timing | `0`, `1` |
 | `HIMEM` | High memory mode | `0`, `1` |
 | `IR` | Dump LLVM IR | `0`, `1` |
+| `COMPILE_ONLY` | Skip node/FileCheck (used by determinism pass) | `0`, `1` |
 
 ## Reports and outputs
 
-When using `run_lit_tests.py`, these files are generated in `cheerp-test/`:
-- `litTestReport.xml` (regular targets)
-- `litTestReport_preexec.xml` (preexecute js mode)
-- `litTestReport_preexec_asmjs.xml` (preexecute asmjs mode)
-- `litTestReport.test` (merged summary report)
+`run_lit_tests.py` writes one xunit report per `(target, mode)` combination:
+`litTestReport_<target>_<mode>.xml`. They're merged into `litTestReport.test`
+at the end and (unless `--keep` is set) the per-combo XMLs are deleted.
 
-Temporary artifacts are placed under `Outputs/<relpath>/Output/<testname>.tmp/` (mirroring the source tree) by lit; keep them when debugging failures using `--keep`.
+Test artifacts are placed under
 
-When using `--prefix <name>` (or `--param OUTPUT_PREFIX=<name>`), the output tree is written to `Outputs-<name>/` instead of `Outputs/`, so multiple configurations can coexist for diffing.
+```
+Outputs[-<prefix>]/<target>-<mode>/<relpath>/Output/<testname>.tmp.*
+```
+
+so that runs across `(target, mode)` don't collide and `--keep` preserves them all. With `--prefix mybuild` the root becomes `Outputs-mybuild/` instead of `Outputs/`. Determinism passes write into `Outputs[-<prefix>]-det/...`.
+
+For example, an `--all` run produces:
+
+```
+Outputs/js-regular/bitfield/Output/test1.cpp.tmp.js
+Outputs/wasm-regular/bitfield/Output/test1.cpp.tmp.js
+Outputs/asmjs-regular/bitfield/Output/test1.cpp.tmp.js
+Outputs/js-preexec/bitfield/Output/test1.cpp.tmp.log
+Outputs/asmjs-preexec/bitfield/Output/test1.cpp.tmp.log
+```
 
 ## Writing tests
 
 ### Test file structure
 
-Tests are C/C++ source files (`.c`, `.cpp`) with special RUN directives in comments that tell lit how to compile and verify the test:
+Tests are C/C++ source files (`.c`, `.cpp`) with special RUN directives in comments that tell lit how to compile and verify the test. The canonical form is a single RUN line:
 
 ```cpp
-// RUN: mkdir -p %t
-// RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
-// RUN: %regular_only %run_if_wasm %compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
+// RUN: %compile -o %t.js %s 2>%t.log && %run | %FileCheck %s
 
-#include <cheerp/clientlib.h>
+#include "tests.h"
 
 void webMain() {
-    // CHECK: Hello from Cheerp!
-    client::console.log("Hello from Cheerp!");
+    // CHECK: result: 42
+    assertPrint("result:", 42);
 }
 ```
 
-### Available test features (REQUIRES directive)
+That one line works in all five `(target, mode)` combinations:
+- `(js, regular)`, `(wasm, regular)`, `(asmjs, regular)` — `%compile` is the
+  per-target compile command and `%run` is `node %t.js 2>&1`.
+- `(js, preexec)`, `(asmjs, preexec)` — `%compile` is the preexec compile
+  command (which prints test output to stderr); `2>%t.log` captures it and
+  `%run` is `cat %t.log`.
 
-Use `REQUIRES:` to specify which configurations a test needs:
+### Substitutions
 
-```cpp
-// REQUIRES: wasm
-// REQUIRES: linear-memory
-// REQUIRES: no-asan
-```
-
-**Available features:**
-- **Targets:** `js`, `wasm`, `asmjs`, `linear-memory` (wasm or asmjs), `packed_tests` (wasm or js)
-- **Modes:** `regular`, `preexecution`
-- **Sanitizers:** `asan`, `no-asan`
-- **Tools:** `valgrind`, `no-valgrind`
-
-### Compile macros
-
-Use these substitutions in RUN directives to compile for specific targets:
-
-| Macro | Description |
-|-------|-------------|
-| `%compile_mode_js` | Compile for genericjs target |
-| `%compile_mode_wasm` | Compile for WebAssembly target |
-| `%compile_mode_asmjs` | Compile for asm.js target |
-
-In combined mode (regular + preexec), these are context-aware: a `%compile_mode_<target>` on a line prefixed with `%regular_only` expands to the regular compile command, and on a line prefixed with `%preexec_only` it expands to the preexec compile command.
-
-### Run macros
-
-| Macro | Description |
-|-------|-------------|
-| `%then_run_js` | Expands to `&& node %t/j` in regular mode; empty in preexec-only mode |
-
-Most tests inline `&& node %t/X` directly instead of using a run macro.
-
-**Note:** In preexecution mode the compiler executes the code during compilation and emits CHECK-able output on stderr, so no separate run step is needed.
-
-### Mode-specific test lines
-
-When writing tests that behave differently in regular vs preexecution mode, prefix RUN lines with `%regular_only` or `%preexec_only`:
-
-```cpp
-// Regular mode: compile and run with node
-// RUN: %regular_only %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
-
-// Preexec mode: compiler executes during compilation
-// RUN: %preexec_only %compile_mode_js -o %t/j %s 2>&1 | %FileCheck %s
-```
-
-The `%regular_only` and `%preexec_only` prefixes control which lines execute based on the test mode:
-- **Combined mode** (`REG=1 PRE_EX=1`): Both types of lines execute
-- **Regular-only mode** (default): Only `%regular_only` lines execute
-- **Preexec-only mode** (`REG=0 PRE_EX=j/a`): Only `%preexec_only` lines execute
-
-### Conditional execution by target
-
-Use `%run_if_<target>` to execute commands only when a specific target is enabled:
-
-```cpp
-// RUN: %run_if_wasm %compile_mode_wasm -o %t/w %s && node %t/w
-// RUN: %run_if_js %compile_mode_js -o %t/j %s && node %t/j
-```
-
-If the target is disabled, the entire RUN line is replaced with `true` (no-op).
-
-### Other substitutions
-
-| Macro | Description |
-|-------|-------------|
-| `%s` | Source file path |
-| `%t` | Temporary output directory |
-| `%FileCheck` | Path to FileCheck tool |
+| Macro | Meaning |
+|-------|---------|
+| `%compile` | Compile command for this invocation's `(target, mode)` |
+| `%run` | `node %t.js 2>&1` in regular mode; `cat %t.log` in preexec mode |
+| `%run_if_<target>` | Pass-through if this invocation's target matches; replaced with `true` (and the rest of the line) otherwise. Use only when a test needs per-target RUN-line variation that can't be expressed via REQUIRES. |
+| `%FileCheck` | Path to FileCheck |
 | `%node` | Node.js executable |
 | `%valgrind` | Valgrind command (if enabled) |
+| `%helpers` | Path to repo `helpers/` directory |
+| `%s` | Source file path |
+| `%t` | Per-test unique base path; `%t.js`, `%t.log`, `%t-<suffix>.js` are siblings |
+
+### REQUIRES (test feature gating)
+
+Use `// REQUIRES:` to restrict a test to specific features:
+
+```cpp
+// REQUIRES: regular            // skip in preexec mode
+// REQUIRES: js                 // run only when TARGET=js
+// REQUIRES: linear-memory      // run only on wasm or asmjs
+// REQUIRES: regular, no-asan   // both must hold
+```
+
+**Available features (set per invocation by `lit.cfg`):**
+- Targets: `js`, `wasm`, `asmjs`
+- Mode: `regular` or `preexecution`
+- Linear-memory subset: `linear-memory` (= wasm or asmjs)
+- Packed-tests subset: `packed_tests` (= wasm or js)
+- Sanitizers: `asan` / `no-asan`
+- Tools: `valgrind` / `no-valgrind`
+
+### Per-target divergence
+
+If a test legitimately needs different RUN lines per target (e.g. a per-target check-prefix, or a multi-artifact jsexport-style test), keep multiple RUN lines and gate them with `%run_if_<target>`:
+
+```cpp
+// RUN: %run_if_js    %compile -o %t.js %s 2>%t.log && %run | %FileCheck %s
+// RUN: %run_if_wasm  %compile -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefix=CHECK_WASM %s
+// RUN: %run_if_asmjs %compile -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefix=CHECK_WASM %s
+```
+
+For multi-artifact tests (e.g. jsexport modules), name the artifacts explicitly and don't use `%run` (the driver isn't `%t.js`):
+
+```cpp
+// REQUIRES: regular
+// RUN: %run_if_js %compile -cheerp-make-module=es6      -o %t-es6.mjs       %s
+// RUN: %run_if_js python3 %helpers/run_cheerp_module.py --module=es6      %t-es6.mjs      | %FileCheck %s
+// RUN: %run_if_js %compile -cheerp-make-module=commonjs -o %t-commonjs.js  %s
+// RUN: %run_if_js python3 %helpers/run_cheerp_module.py --module=commonjs %t-commonjs.js | %FileCheck %s
+```
+
+`%t-X.js` is a sibling of `%t.js` (lit guarantees `%T` exists), so no `mkdir` is needed.
 
 ### FileCheck patterns
 
-Use `CHECK:` comments to verify compiler output or program behavior:
+Use `CHECK:` comments to verify program output:
 
 ```cpp
 void webMain() {
     // CHECK: result: 42
-    client::console.log("result:", 42);
-    
+    assertPrint("result:", 42);
+
     // CHECK-NEXT: done
-    client::console.log("done");
+    assertPrint("done");
 }
 ```
 
 **Common FileCheck directives:**
-- `CHECK:` - Must appear in output
-- `CHECK-NEXT:` - Must appear on the next line
-- `CHECK-NOT:` - Must not appear in output
-- `CHECK-DAG:` - Must appear, order doesn't matter
-- `CHECK-LABEL:` - Marks a labeled section
-
-### Example test template
-
-```cpp
-// RUN: mkdir -p %t
-// RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
-// RUN: %regular_only %run_if_wasm %compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
-// RUN: %regular_only %run_if_asmjs %compile_mode_asmjs -o %t/a %s 2>&1 && node %t/a 2>&1 | %FileCheck %s
-// RUN: %preexec_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 | %FileCheck %s
-// RUN: %preexec_only %run_if_asmjs %compile_mode_asmjs -o %t/a %s 2>&1 | %FileCheck %s
-
-#include <cheerp/clientlib.h>
-
-void webMain() {
-    // CHECK: Test output: 123
-    client::console.log("Test output:", 123);
-}
-```
+- `CHECK:` — must appear in output
+- `CHECK-NEXT:` — must appear on the next line
+- `CHECK-NOT:` — must not appear in output
+- `CHECK-DAG:` — must appear, order doesn't matter
+- `CHECK-LABEL:` — marks a labeled section
 
 ### Finding test artifacts
 
-Lit creates temporary directories for each test under `Outputs/<relpath>/Output/<testname>.tmp/`, mirroring the source layout. For example, artifacts for `tests/memory/test1.cpp` land in `Outputs/memory/Output/test1.cpp.tmp/`.
+Lit creates a per-test layout:
+
+```
+Outputs/<target>-<mode>/<relpath>/Output/<testname>.tmp.{js,log,wasm,...}
+```
+
+For example, artifacts for `tests/memory/kinds.cpp` in `(js, regular)`:
 
 ```bash
-# List recent test artifacts
-find Outputs -path '*/Output/*.tmp' -type d -mmin -5
-
-# Inspect a specific test's output
-ls -la Outputs/memory/Output/test1.cpp.tmp/
+ls Outputs/js-regular/memory/Output/kinds.cpp.tmp*
 ```
 
 ### Keeping logs for debugging
@@ -402,30 +365,26 @@ ls -la Outputs/memory/Output/test1.cpp.tmp/
 By default, logs are cleaned up. Use `--keep` to preserve them:
 
 ```bash
-python3 run_lit_tests.py --keep tests/memory/test1.cpp
+python3 run_lit_tests.py --keep tests/memory/kinds.cpp
 ```
 
-### Extracting test outputs
+### Writing outputs into a separate tree
 
-Use `--prefix` to write the output tree into `Outputs-<prefix>/` instead of `Outputs/`, so you can keep results from multiple runs side-by-side for diffing:
+Use `--prefix` to write into `Outputs-<prefix>/` so multiple runs can coexist for diffing:
 
 ```bash
-python3 run_lit_tests.py --prefix debug tests/memory/test1.cpp
-
-# Artifacts land under Outputs-debug/
-ls -la Outputs-debug/memory/Output/test1.cpp.tmp/
+python3 run_lit_tests.py --prefix debug tests/memory/kinds.cpp
+ls Outputs-debug/wasm-regular/memory/Output/kinds.cpp.tmp*
 ```
 
 ### Verbose lit output
 
-For detailed test execution information:
-
 ```bash
 # With run_lit_tests.py
-python3 run_lit_tests.py --print-cmd .
+python3 run_lit_tests.py --print-cmd tests/memory/kinds.cpp
 
 # With direct lit
-lit -a tests/memory/test1.cpp
+lit -a --param TARGET=wasm --param MODE=regular tests/memory/kinds.cpp
 ```
 
 ## Reference: All run_lit_tests.py options
@@ -435,22 +394,23 @@ Options:
   -h, --help            Show help message and exit
   -O OPTLEVEL           Optimization level (default -O1)
   -j JOBS               Number of parallel jobs (default 1)
-  
+
   Target selection:
-  --wasm                Run tests in wasm mode
-  --asmjs               Run tests in asmjs mode
-  --genericjs           Run tests in genericjs mode
-  --all                 Run all test kinds [genericjs/asmjs/wasm/preexecute/preexecute-asmjs]
-  
+  --wasm                Run the wasm target
+  --asmjs               Run the asmjs target
+  --genericjs           Run the generic js target
+  --all                 Run all targets in regular mode plus preexec mode
+                        (wasm preexec is skipped)
+
   Execution modes:
-  --preexecute          Run tests inside PreExecuter (js/wasm)
-  --preexecute-asmjs    Run tests inside PreExecuter in asmjs mode
-  --quick               Run all modes in parallel (combined regular+preexec)
-  
+  --preexecute          Also run preexec mode for the selected targets
+                        (wasm preexec is always skipped)
+
   Compiler configuration:
-  --compiler PATH       Compiler alias/path (e.g. cheerp, local, /opt/cheerp2/bin/clang++)
+  --compiler PATH       Compiler alias/path (e.g. cheerp, local,
+                        /opt/cheerp2/bin/clang++)
   --cheerp-prefix PATH  Cheerp install prefix (e.g. /opt/cheerp)
-  
+
   Compiler flags:
   --pretty-code         Compile with -cheerp-pretty-code
   --no-lto              Compile with -cheerp-no-lto
@@ -458,19 +418,21 @@ Options:
   --asan                Test using AddressSanitizer (only asmjs/wasm)
   --himem               Run tests with heap start at 2GB
   --valgrind            Run with valgrind activated
-  
+
   Determinism testing:
-  --determinism         Recompile a sampled subset after the regular run and
+  --determinism         Recompile a sampled subset per (target, mode) and
                         diff artifacts; reports pass/fail per test
   --determinism-probability P
-                        Probability that a test is included in the sample (0.0-1.0)
+                        Probability that a test is included in the sample
+                        (0.0-1.0)
   --determinism-only    Skip the regular run; do two determinism passes A/B
+                        per (target, mode)
   --determinism-exclude-dir DIR
                         Exclude directory name from sampling (repeatable)
   --determinism-seed STR
                         Seed string for the sampling RNG (auto-generated
                         and printed if omitted)
-  
+
   Debugging:
   --keep                Don't delete log files for individual tests
   --prefix PREFIX       Write outputs to Outputs-<PREFIX>/ instead of Outputs/
@@ -484,18 +446,16 @@ Options:
 
 When adding a new test to the suite:
 
-1. **Choose the appropriate directory** based on what you're testing (unit/, memory/, std/, etc.)
+1. **Choose the appropriate directory** (e.g. `tests/memory/`, `tests/std/`, `tests/jsexport/`).
 
-2. **Create a `.cpp` or `.c` file** with a descriptive name
+2. **Create a `.cpp` or `.c` file** with a descriptive name.
 
-3. **Add RUN directives** at the top:
+3. **Add a single RUN directive** at the top:
    ```cpp
-   // RUN: mkdir -p %t
-   // RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
-   // RUN: %regular_only %run_if_wasm %compile_mode_wasm -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
+   // RUN: %compile -o %t.js %s 2>%t.log && %run | %FileCheck %s
    ```
 
-4. **Add REQUIRES directives** if your test needs specific features:
+4. **Add REQUIRES directives** if the test isn't valid for every `(target, mode)` it would otherwise run in:
    ```cpp
    // REQUIRES: linear-memory
    // REQUIRES: no-asan
@@ -505,7 +465,7 @@ When adding a new test to the suite:
    ```cpp
    void webMain() {
        // CHECK: expected output
-       client::console.log("expected output");
+       assertPrint("expected output");
    }
    ```
 
@@ -514,7 +474,7 @@ When adding a new test to the suite:
    python3 run_lit_tests.py path/to/your/test.cpp
    ```
 
-7. **Verify across all relevant targets**:
+7. **Verify across all relevant (target, mode) combos**:
    ```bash
    python3 run_lit_tests.py --all path/to/your/test.cpp
    ```
@@ -524,4 +484,4 @@ When adding a new test to the suite:
    python3 run_lit_tests.py --determinism --determinism-probability 1.0 path/to/your/test.cpp
    ```
 
-9. **Document non-obvious behavior** in comments within the test file
+9. **Document non-obvious behavior** in comments within the test file.

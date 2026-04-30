@@ -2,11 +2,10 @@
 //	Copyright 2025 Leaning Technologies
 //===----------------------------------------------------------------------===//
 
-// REQUIRES: wasm, regular
+// REQUIRES: regular, wasm
+// RUN: %compile -cheerp-wasm-enable=externref -o %t.js %s 2>%t.log && %run | %FileCheck %s
 // NOTE: This test requires externref support which is WASM-only
 
-// RUN: mkdir -p %t
-// RUN: %regular_only %run_if_wasm %compile_mode_wasm -cheerp-wasm-enable=externref -o %t/w %s 2>&1 && node %t/w 2>&1 | %FileCheck %s
 
 // CHECK: anyref argument passing 1/2: 1
 // CHECK: anyref argument passing 2/2: 1

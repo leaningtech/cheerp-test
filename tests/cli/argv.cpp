@@ -4,10 +4,9 @@
 
 // REQUIRES: regular, js
 
-// RUN: mkdir -p %t
-// RUN: %regular_only %run_if_js %compile_mode_js -cheerp-make-module=es6 -o %t/argv.mjs %s 2>&1
-// RUN: %regular_only %run_if_js python3 %helpers/create_driver.py %t/argv.mjs %S/argv.testing.js %t/argv_driver.mjs --module=es6
-// RUN: %regular_only %run_if_js %node %t/argv_driver.mjs 2>&1 | %FileCheck %s
+// RUN: %run_if_js %compile -cheerp-make-module=es6 -o %t-argv.mjs %s 2>&1
+// RUN: %run_if_js python3 %helpers/create_driver.py %t-argv.mjs %S/argv.testing.js %t-argv_driver.mjs --module=es6
+// RUN: %run_if_js %node %t-argv_driver.mjs 2>&1 | %FileCheck %s
 
 // CHECK: argc: 1
 // CHECK-NOT: value of argv: nullptr

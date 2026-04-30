@@ -2,9 +2,9 @@
 //	Copyright 2025 Leaning Technologies
 //===---------------------------------------------------------------------===//
 
-// RUN: mkdir -p %t
+// REQUIRES: js, regular
+// RUN: %compile -o %t.js %s 2>%t.log && %run | %FileCheck %s
 
-// RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
 
 
 #include <tests.h>

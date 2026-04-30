@@ -4,9 +4,8 @@
 // Tries to construct `Task::promise_type` using the generic conversion
 
 // REQUIRES: js, regular
+// RUN: %compile -std=c++20 -o %t.js %s 2>%t.log && cat %t.log | %FileCheck %s
 
-// RUN: mkdir -p %t
-// RUN: %regular_only %run_if_js %compile_mode_js -std=c++20 -o %t/j %s 2>&1 | %FileCheck %s
 
 #include <coroutine>
 

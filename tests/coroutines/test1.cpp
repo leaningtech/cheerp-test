@@ -3,9 +3,8 @@
 //===----------------------------------------------------------------------===//
 
 // REQUIRES: js, regular
+// RUN: %compile -std=c++20 -o %t.js %s 2>%t.log && %run | %FileCheck %s
 
-// RUN: mkdir -p %t
-// RUN: %regular_only %run_if_js %compile_mode_js -std=c++20 -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
 
 // CHECK: genericjs coroutine support: 3
 

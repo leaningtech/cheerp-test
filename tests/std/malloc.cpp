@@ -42,10 +42,9 @@
 // We probably want to add more tests from there in the future, in particular those for
 // graceful failure of malloc (our malloc never returns NULL for now)
 
-// REQUIRES: asmjs
+// REQUIRES: asmjs, regular
+// RUN: %compile -o %t.js %s 2>%t.log && %run | %FileCheck %s
 
-// RUN: mkdir -p %t
-// RUN: %regular_only %run_if_asmjs %compile_mode_asmjs -o %t/a %s 2>&1 && node %t/a 2>&1| %FileCheck %s
 
 #include <stdio.h>
 #include <stdlib.h>

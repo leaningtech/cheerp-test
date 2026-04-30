@@ -2,3 +2,5 @@
 /Outputs-*
 /tests/.lit_test_times.txt
 /litTestReport.test
+/litTestReport_*.xml
+/determinism_failures_compile_only/

@@ -5,9 +5,8 @@
 // Therefore the lowered precision in the CHECK line is not an issue. 
 
 // REQUIRES: js, regular
+// RUN: %compile -o %t.js %s 2>%t.log && %run | %FileCheck %s
 
-// RUN: mkdir -p %t
-// RUN: %regular_only %run_if_js %compile_mode_js -o %t/j %s 2>&1 && node %t/j 2>&1 | %FileCheck %s
 
 // CHECK: High precision strtod: -0.8320503235
 
