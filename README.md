@@ -276,7 +276,7 @@ That one line works in all five `(target, mode)` combinations:
 |-------|---------|
 | `%compile` | Compile command for this invocation's `(target, mode)` |
 | `%run` | `node %t.js 2>&1` in regular mode; `cat %t.log` in preexec mode |
-| `%run_if_<target>` | Pass-through if this invocation's target matches; replaced with `true` (and the rest of the line) otherwise. Use only when a test needs per-target RUN-line variation that can't be expressed via REQUIRES. |
+| `%target` | Literal target name: `js`, `wasm`, or `asmjs`. Useful for embedding the target into a per-target FileCheck prefix. |
 | `%FileCheck` | Path to FileCheck |
 | `%node` | Node.js executable |
 | `%valgrind` | Valgrind command (if enabled) |
@@ -305,25 +305,38 @@ Use `// REQUIRES:` to restrict a test to specific features:
 
 ### Per-target divergence
 
-If a test legitimately needs different RUN lines per target (e.g. a per-target check-prefix, or a multi-artifact jsexport-style test), keep multiple RUN lines and gate them with `%run_if_<target>`:
+For tests where the only per-target divergence is the FileCheck prefix, embed
+`%target` into the prefix and add per-target CHECK lines (using
+`--allow-unused-prefixes` so targets without a matching CHECK line don't
+error):
 
 ```cpp
-// RUN: %run_if_js    %compile -o %t.js %s 2>%t.log && %run | %FileCheck %s
-// RUN: %run_if_wasm  %compile -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefix=CHECK_WASM %s
-// RUN: %run_if_asmjs %compile -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefix=CHECK_WASM %s
+// RUN: %compile -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefixes=CHECK,CHECK_%target --allow-unused-prefixes %s
+
+// CHECK: common output
+// CHECK_js:   js-only output
+// CHECK_wasm: wasm-only output
 ```
 
-For multi-artifact tests (e.g. jsexport modules), name the artifacts explicitly and don't use `%run` (the driver isn't `%t.js`):
+For multi-artifact tests (e.g. jsexport modules tested in vanilla / es6 /
+commonjs / closure forms), use one set of RUN lines that runs unchanged for
+every target. Name the artifacts explicitly so they coexist; don't use `%run`
+because the driver isn't `%t.js`:
 
 ```cpp
 // REQUIRES: regular
-// RUN: %run_if_js %compile -cheerp-make-module=es6      -o %t-es6.mjs       %s
-// RUN: %run_if_js python3 %helpers/run_cheerp_module.py --module=es6      %t-es6.mjs      | %FileCheck %s
-// RUN: %run_if_js %compile -cheerp-make-module=commonjs -o %t-commonjs.js  %s
-// RUN: %run_if_js python3 %helpers/run_cheerp_module.py --module=commonjs %t-commonjs.js | %FileCheck %s
+// RUN: %compile -o %t-vanilla.js %s
+// RUN: %node %t-vanilla.js 2>&1 | %FileCheck %s
+// RUN: %compile -cheerp-make-module=es6      -o %t-es6.mjs       %s
+// RUN: python3 %helpers/run_cheerp_module.py --module=es6      %t-es6.mjs      2>&1 | %FileCheck %s
+// RUN: %compile -cheerp-make-module=commonjs -o %t-commonjs.js  %s
+// RUN: python3 %helpers/run_cheerp_module.py --module=commonjs %t-commonjs.js 2>&1 | %FileCheck %s
+// RUN: %compile -cheerp-make-module=closure  -o %t-closure.js   %s
+// RUN: %node %t-closure.js 2>&1 | %FileCheck %s
 ```
 
-`%t-X.js` is a sibling of `%t.js` (lit guarantees `%T` exists), so no `mkdir` is needed.
+`%t-X.js` is a sibling of `%t.js` (lit guarantees `%T` exists), so no `mkdir`
+is needed.
 
 ### FileCheck patterns
 

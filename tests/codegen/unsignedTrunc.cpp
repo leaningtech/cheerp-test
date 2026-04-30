@@ -4,17 +4,9 @@
 
 // REQUIRES: regular
 
-// RUN: %run_if_js %compile -cheerp-make-module=es6 -o %t-j_es6.mjs %s 2>&1 
-// RUN: %run_if_js python3 %helpers/create_driver.py %t-j_es6.mjs %S/unsignedTrunc.testing.js %t-j_es6_driver.mjs --module=es6
-// RUN: %run_if_js %node %t-j_es6_driver.mjs %s 2>&1 | %FileCheck %s
-
-// RUN: %run_if_wasm %compile -cheerp-make-module=es6 -o %t-w_es6.mjs %s 2>&1
-// RUN: %run_if_wasm python3 %helpers/create_driver.py %t-w_es6.mjs %S/unsignedTrunc.testing.js %t-w_driver.mjs --module=es6
-// RUN: %run_if_wasm %node %t-w_driver.mjs 2>&1 | %FileCheck %s
-
-// RUN: %run_if_asmjs %compile -cheerp-make-module=es6 -o %t-a_es6.mjs %s 2>&1
-// RUN: %run_if_asmjs python3 %helpers/create_driver.py %t-a_es6.mjs %S/unsignedTrunc.testing.js %t-a_driver.mjs --module=es6
-// RUN: %run_if_asmjs %node %t-a_driver.mjs 2>&1 | %FileCheck %s
+// RUN: %compile -cheerp-make-module=es6 -o %t-es6.mjs %s 2>&1
+// RUN: python3 %helpers/create_driver.py %t-es6.mjs %S/unsignedTrunc.testing.js %t-es6_driver.mjs --module=es6
+// RUN: %node %t-es6_driver.mjs 2>&1 | %FileCheck %s
 
 //CHECK: Module export SUCCESS
 #include <tests.h>

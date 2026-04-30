@@ -5,33 +5,27 @@
 //
 // Test vanilla module
 // REQUIRES: regular
-// RUN: %run_if_js %compile -o %t-vanilla.js %s 2>&1
-// RUN: %run_if_js python3 %helpers/create_driver.py %t-vanilla.js %S/static_variables.testing.js %t-vanilla_driver.js --module=vanilla
-// RUN: %run_if_js %node %t-vanilla_driver.js 2>&1 | %FileCheck %s --check-prefix=CHECK
+// RUN: %compile -o %t-vanilla.js %s 2>&1
+// RUN: python3 %helpers/create_driver.py %t-vanilla.js %S/static_variables.testing.js %t-vanilla_driver.js --module=vanilla
+// RUN: %node %t-vanilla_driver.js 2>&1 | %FileCheck %s --check-prefix=CHECK
 
 // Test ES6 module
-// RUN: %run_if_js %compile -cheerp-make-module=es6 -o %t-es6.mjs %s 2>&1
-// RUN: %run_if_js python3 %helpers/create_driver.py %t-es6.mjs %S/static_variables.testing.js %t-es6_driver.mjs --module=es6
-// RUN: %run_if_js %node %t-es6_driver.mjs 2>&1 | %FileCheck %s --check-prefix=CHECK
+// RUN: %compile -cheerp-make-module=es6 -o %t-es6.mjs %s 2>&1
+// RUN: python3 %helpers/create_driver.py %t-es6.mjs %S/static_variables.testing.js %t-es6_driver.mjs --module=es6
+// RUN: %node %t-es6_driver.mjs 2>&1 | %FileCheck %s --check-prefix=CHECK
 
 // Test CommonJS module
-// RUN: %run_if_js %compile -cheerp-make-module=commonjs -o %t-commonjs.js %s 2>&1
-// RUN: %run_if_js python3 %helpers/create_driver.py %t-commonjs.js %S/static_variables.testing.js %t-commonjs_driver.js --module=commonjs
-// RUN: %run_if_js %node %t-commonjs_driver.js 2>&1 | %FileCheck %s --check-prefix=CHECK
+// RUN: %compile -cheerp-make-module=commonjs -o %t-commonjs.js %s 2>&1
+// RUN: python3 %helpers/create_driver.py %t-commonjs.js %S/static_variables.testing.js %t-commonjs_driver.js --module=commonjs
+// RUN: %node %t-commonjs_driver.js 2>&1 | %FileCheck %s --check-prefix=CHECK
 
 // Test Closure module
-// RUN: %run_if_js %compile -cheerp-make-module=closure -o %t-closure.js %s 2>&1
-// RUN: %run_if_js python3 %helpers/create_driver.py %t-closure.js %S/static_variables.testing.js %t-closure_driver.js --module=closure
-// RUN: %run_if_js %node %t-closure_driver.js 2>&1 | %FileCheck %s --check-prefix=CHECK
+// RUN: %compile -cheerp-make-module=closure -o %t-closure.js %s 2>&1
+// RUN: python3 %helpers/create_driver.py %t-closure.js %S/static_variables.testing.js %t-closure_driver.js --module=closure
+// RUN: %node %t-closure_driver.js 2>&1 | %FileCheck %s --check-prefix=CHECK
 //
 // Also test wasm and asmjs with vanilla driver:
-// RUN: %run_if_wasm %valgrind %compile -o %t-w %s 2>&1
-// RUN: %run_if_wasm python3 %helpers/create_driver.py %t-w %S/static_variables.testing.js %t-w_driver.js --module=vanilla
-// RUN: %run_if_wasm %node %t-w_driver.js 2>&1 | %FileCheck %s
 //
-// RUN: %run_if_asmjs %valgrind %compile -o %t-a %s 2>&1
-// RUN: %run_if_asmjs python3 %helpers/create_driver.py %t-a %S/static_variables.testing.js %t-a_driver.js --module=vanilla
-// RUN: %run_if_asmjs %node %t-a_driver.js 2>&1 | %FileCheck %s 
 //
 // CHECK: CPP: staticVariable (expect 1): 1
 // CHECK: CPP: getStaticVariable() (expect 1): 1
