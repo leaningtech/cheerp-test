@@ -3,9 +3,7 @@
 //===---------------------------------------------------------------------===//
 
 
-// RUN: %run_if_js %compile -o %t.js %s 2>%t.log && %run | %FileCheck %s
-// RUN: %run_if_wasm %compile -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefix=CHECK_WASM %s
-// RUN: %run_if_asmjs %compile -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefix=CHECK_WASM %s
+// RUN: %compile -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefix=CHECK_%target %s
 
 #include <tests.h>
 #include <string.h>
@@ -17,15 +15,17 @@ void webMain()
 	int b = 41;
 #ifdef __ASMJS__
 	assertPrint("memcmp (asmjs/wasm) 1/2:", memcmp(&a, &b, sizeof(int)));
-	//CHECK_WASM: memcmp (asmjs/wasm) 1/2: 1
+	// CHECK_wasm:  memcmp (asmjs/wasm) 1/2: 1
+	// CHECK_asmjs: memcmp (asmjs/wasm) 1/2: 1
 #endif
 	assertPrint("memcmp (safe) 1/2:", cheerp::memcmp(&a, &b, sizeof(int)));
-	// CHECK: memcmp (safe) 1/2: 1
+	// CHECK_js: memcmp (safe) 1/2: 1
 	b++;
 #ifdef __ASMJS__
 	assertPrint("memcmp (asmjs/wasm) 2/2:", memcmp(&a, &b, sizeof(int)));
-	// CHECK_WASM: memcmp (asmjs/wasm) 2/2: 0
+	// CHECK_wasm:  memcmp (asmjs/wasm) 2/2: 0
+	// CHECK_asmjs: memcmp (asmjs/wasm) 2/2: 0
 #endif
 	assertPrint("memcmp (safe) 2/2:", cheerp::memcmp(&a, &b, sizeof(int)));
-	// CHECK: memcmp (safe) 2/2: 0
+	// CHECK_js: memcmp (safe) 2/2: 0
 }

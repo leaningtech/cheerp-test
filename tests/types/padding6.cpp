@@ -5,8 +5,7 @@
 // REQUIRES: packed_tests, regular
 
 
-// RUN: %run_if_js %compile -o %t-j %s 2>&1 && node %t-j 2>&1 | %FileCheck --check-prefixes=CHECK,CHECK_JS %s
-// RUN: %run_if_wasm %compile -o %t-w %s 2>&1 && node %t-w 2>&1 | %FileCheck --check-prefixes=CHECK,CHECK_WASM %s
+// RUN: %compile -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefixes=CHECK,CHECK_%target %s
 
 
 #include <tests.h>
@@ -82,8 +81,8 @@ int testSize()
 int main()
 {
 	assertPrint("Offsetof support otherChar:", offsetof(B, otherChar));
-	// CHECK_JS: Offsetof support otherChar: 236
-	// CHECK_WASM: Offsetof support otherChar: 240
+	// CHECK_js: Offsetof support otherChar: 236
+	// CHECK_wasm: Offsetof support otherChar: 240
 	int sum = 0;
 	sum += testSize<1>();
 	// CHECK: Padding support: 1

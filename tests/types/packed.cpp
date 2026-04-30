@@ -5,8 +5,7 @@
 // REQUIRES: packed_tests, regular
 
 
-// RUN: %run_if_js %compile -o %t-j %s 2>&1 && node %t-j 2>&1 | %FileCheck %s
-// RUN: %run_if_wasm %compile -o %t-w %s 2>&1 && node %t-w 2>&1 | %FileCheck %s
+// RUN: %compile -o %t.js %s 2>%t.log && %run | %FileCheck %s
 
 #include <tests.h>
 

@@ -4,9 +4,7 @@
 
 // REQUIRES: regular
 
-// RUN: %run_if_js %compile -fexceptions -o %t-j %s 2>&1 && node %t-j 2>&1 | %FileCheck --check-prefixes=CHECK-JS,CHECK %s
-// RUN: %run_if_wasm %compile -fexceptions -o %t-w %s 2>&1 && node %t-w 2>&1 | %FileCheck %s
-// RUN: %run_if_asmjs %compile -fexceptions -o %t-a %s 2>&1 && node %t-a 2>&1 | %FileCheck %s 
+// RUN: %compile -fexceptions -o %t.js %s 2>%t.log && %run | %FileCheck --check-prefixes=CHECK,CHECK-%target --allow-unused-prefixes %s
 
 #include <tests.h>
 #include <cheerpintrin.h>
@@ -436,7 +434,7 @@ void testJsObject()
 		r = -1;
 	}
 	assertPrint("Throw a client::Object* and catch it:", (r == i));
-	//CHECK-JS: Throw a client::Object* and catch it: 1
+	//CHECK-js: Throw a client::Object* and catch it: 1
 }
 #endif
 
@@ -500,7 +498,7 @@ void testRethrowForeign()
 		r += int(*(*e.get())["data"]);
 	}
 	assertPrint("Throw a client::Object* and rethrow it:", (r == 2*i));
-	//CHECK-JS: Throw a client::Object* and rethrow it: 1
+	//CHECK-js: Throw a client::Object* and rethrow it: 1
 }
 #endif
 
