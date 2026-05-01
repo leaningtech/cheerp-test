@@ -56,24 +56,35 @@ python3 run_lit_tests.py tests/memory
 
 # Run a single test
 python3 run_lit_tests.py tests/memory/kinds.cpp
-
-# Run all (target, mode) combos: js/wasm/asmjs in both regular and preexec
-# (wasm preexec is always skipped)
-python3 run_lit_tests.py --all
 ```
 
 #### Target selection
 
+There are five `(target, mode)` combos, each with its own flag. If no flag is passed, all five run.
+
+| Flag | Combo |
+|------|-------|
+| `--genericjs` | `(js, regular)` |
+| `--wasm` | `(wasm, regular)` |
+| `--asmjs` | `(asmjs, regular)` |
+| `--preexecute-genericjs` | `(js, preexec)` |
+| `--preexecute-asmjs` | `(asmjs, preexec)` |
+
 ```bash
-# Select targets explicitly
-python3 run_lit_tests.py --wasm --asmjs tests
-python3 run_lit_tests.py --genericjs tests/jsexport
+# Default: all five combos
+python3 run_lit_tests.py
 
 # WebAssembly only
 python3 run_lit_tests.py --wasm
 
-# All linear-memory targets
+# Both linear-memory targets in regular mode
 python3 run_lit_tests.py --wasm --asmjs
+
+# JS in regular plus asmjs in preexec
+python3 run_lit_tests.py --genericjs --preexecute-asmjs
+
+# Just preexec for js
+python3 run_lit_tests.py --preexecute-genericjs
 ```
 
 #### Compiler and optimization
@@ -88,21 +99,6 @@ python3 run_lit_tests.py -j8 -O2
 # Test with optimization level O3
 python3 run_lit_tests.py -O3 tests
 ```
-
-#### Preexecute mode
-
-```bash
-# Add preexec mode on top of the selected targets (skipping wasm preexec)
-python3 run_lit_tests.py --preexecute
-
-# Preexec for js only
-python3 run_lit_tests.py --genericjs --preexecute
-
-# Preexec for asmjs only
-python3 run_lit_tests.py --asmjs --preexecute
-```
-
-There is one lit invocation per `(target, mode)` combination — preexec is just an extra mode rather than a separate set of flags.
 
 #### Determinism testing
 
@@ -216,7 +212,7 @@ Outputs[-<prefix>]/<target>-<mode>/litTestReport.xml
 
 so that runs across `(target, mode)` don't collide and `rm -rf Outputs/` cleans both. With `--prefix mybuild` the root becomes `Outputs-mybuild/` instead of `Outputs/`. Determinism passes write into `Outputs[-<prefix>]-det/...`.
 
-For example, an `--all` run produces:
+For example, the default (all-five-combos) run produces:
 
 ```
 Outputs/js-regular/bitfield/Output/test1.cpp.tmp.js
@@ -374,16 +370,13 @@ Options:
   -O OPTLEVEL           Optimization level (default -O1)
   -j JOBS               Number of parallel jobs (default 1)
 
-  Target selection:
-  --wasm                Run the wasm target
-  --asmjs               Run the asmjs target
-  --genericjs           Run the generic js target
-  --all                 Run all targets in regular mode plus preexec mode
-                        (wasm preexec is skipped)
-
-  Execution modes:
-  --preexecute          Also run preexec mode for the selected targets
-                        (wasm preexec is always skipped)
+  Target selection (each flag is one (target, mode) combo;
+  no flags = all five combos):
+  --wasm                  Run the wasm target
+  --asmjs                 Run the asmjs target
+  --genericjs             Run the generic js target
+  --preexecute-genericjs  Run the generic js target inside the PreExecuter
+  --preexecute-asmjs      Run the asmjs target inside the PreExecuter
 
   Compiler configuration:
   --compiler PATH       Path to clang++ (default /opt/cheerp/bin/clang++)
@@ -449,7 +442,7 @@ When adding a new test to the suite:
 
 7. **Verify across all relevant (target, mode) combos**:
    ```bash
-   python3 run_lit_tests.py --all path/to/your/test.cpp
+   python3 run_lit_tests.py path/to/your/test.cpp   # default = all five combos
    ```
 
 8. **Check determinism** for compiler changes:

@@ -20,15 +20,15 @@ parser.add_option("--prefix", dest="prefix", help="Write outputs into Outputs-<p
 parser.add_option("--asmjs", dest="asmjs", help="Run the asmjs target", action="store_true", default=False)
 parser.add_option("--genericjs", dest="genericjs", help="Run the generic js target", action="store_true", default=False)
 parser.add_option("--wasm", dest="wasm", help="Run the wasm target", action="store_true", default=False)
+parser.add_option("--preexecute-genericjs", dest="preexecute_genericjs", help="Run the generic js target inside the PreExecuter", action="store_true", default=False)
+parser.add_option("--preexecute-asmjs", dest="preexecute_asmjs", help="Run the asmjs target inside the PreExecuter", action="store_true", default=False)
 parser.add_option("--typescript", dest="typescript", help="Also generate .d.ts files", action="store_true", default=False)
 parser.add_option("--valgrind", dest="valgrind", help="Run with valgrind activated", action="store_true", default=False)
-parser.add_option("--preexecute", dest="preexecute", help="Also run preexec mode for the selected targets (skips wasm)", action="store_true", default=False)
 parser.add_option("--determinism", dest="determinism", help="After each (target, mode) pass, recompile a sampled subset and diff artifacts to detect compiler non-determinism", action="store_true", default=False)
 parser.add_option("--determinism-probability", dest="determinism_probability", help="Probability (0-1) that each test is included in the determinism sample", action="store", type="float", default=0.1)
 parser.add_option("--determinism-only", dest="determinism_only", help="Skip the regular run and do two determinism passes per (target, mode) (for CI)", action="store_true", default=False)
 parser.add_option("--determinism-exclude-dir", dest="determinism_exclude_dirs", help="Exclude directory name from determinism sampling; repeatable", action="append", default=[])
 parser.add_option("--determinism-seed", dest="determinism_seed", help="Seed string for the sampling RNG (auto-generated and printed if omitted)", action="store", default=None)
-parser.add_option("--all", dest="all", help="Run all targets in regular mode plus preexec mode (skipping wasm preexec)", action="store_true", default=False)
 parser.add_option("--pretty-code", dest="pretty_code", help="Compile with -cheerp-pretty-code", action="store_true", default=False)
 parser.add_option("--no-lto", dest="no_lto", help="Compile with -cheerp-no-lto", action="store_true", default=False)
 parser.add_option("--asan", dest="test_asan", help="Test using AddressSanitizer (only asmjs/wasm)", action="store_true", default=False)
@@ -100,23 +100,27 @@ def _discover_and_sample(test_paths, probability, exclude_dirs, seed):
     return candidates, sampled
 
 
+ALL_COMBOS = [
+    ('js', 'regular'),
+    ('wasm', 'regular'),
+    ('asmjs', 'regular'),
+    ('js', 'preexec'),
+    ('asmjs', 'preexec'),
+]
+
+
 def _select_combos(option):
-    """Resolve CLI flags into the list of (target, mode) tuples to run."""
-    if option.all:
-        targets = ['js', 'wasm', 'asmjs']
-        modes = ['regular', 'preexec']
-    else:
-        targets = []
-        if option.genericjs: targets.append('js')
-        if option.wasm: targets.append('wasm')
-        if option.asmjs: targets.append('asmjs')
-        if not targets:
-            targets = ['js', 'wasm', 'asmjs']
-        modes = ['regular']
-        if option.preexecute:
-            modes.append('preexec')
-    combos = [(t, m) for t in targets for m in modes if not (t == 'wasm' and m == 'preexec')]
-    return combos
+    """Resolve CLI flags into the list of (target, mode) tuples to run.
+
+    Each flag is a single combo. If none are passed, default to all five.
+    """
+    combos = []
+    if option.genericjs:             combos.append(('js', 'regular'))
+    if option.wasm:                  combos.append(('wasm', 'regular'))
+    if option.asmjs:                 combos.append(('asmjs', 'regular'))
+    if option.preexecute_genericjs:  combos.append(('js', 'preexec'))
+    if option.preexecute_asmjs:      combos.append(('asmjs', 'preexec'))
+    return combos if combos else list(ALL_COMBOS)
 
 
 if __name__ == "__main__":
