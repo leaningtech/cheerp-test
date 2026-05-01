@@ -2,20 +2,15 @@
 """Determinism check for Cheerp lit tests.
 
 Compares two already-populated Outputs/ trees and reports whether the
-per-test artifact directories match byte-for-byte. On mismatch, both trees'
-copies are saved under determinism_failures_compile_only/ for inspection.
-
-This script does NOT run the compiler or lit itself. Orchestration of the
-two lit passes lives in run_lit_tests.py; the role of this script is
-purely to diff the produced artifacts.
+per-test artifact directories match byte-for-byte. Orchestration of the two
+lit passes lives in run_lit_tests.py; this script just diffs the artifacts
+and prints which tests mismatched.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
-import re
-import shutil
 import sys
 from pathlib import Path
 
@@ -59,16 +54,11 @@ def artifact_dir_for(tree_root: Path, source_root: Path, test_file: Path) -> Pat
     return tree_root / rel.parent / "Output" / f"{rel.name}.tmp"
 
 
-def _safe_filename(s: str) -> str:
-    return re.sub(r"[^A-Za-z0-9._-]+", "_", s)
-
-
 def compare_test(
     test_file: Path,
     tree_a: Path,
     tree_b: Path,
     source_root: Path,
-    failures_dir: Path,
 ) -> tuple[str, str]:
     """Returns (status, message). status is one of 'pass', 'fail', 'skip'."""
     dir_a = artifact_dir_for(tree_a, source_root, test_file)
@@ -93,15 +83,7 @@ def compare_test(
     if manifest_a == manifest_b:
         return "pass", ""
 
-    failures_dir.mkdir(parents=True, exist_ok=True)
-    slug = _safe_filename(str(test_file.resolve().relative_to(source_root.resolve())))
-    dest = failures_dir / slug
-    if dest.exists():
-        shutil.rmtree(dest)
-    shutil.copytree(dir_a, dest / "a")
-    shutil.copytree(dir_b, dest / "b")
-
-    return "fail", f"{_summarize_diff(manifest_a, manifest_b)}\n  saved: {dest}"
+    return "fail", _summarize_diff(manifest_a, manifest_b)
 
 
 def main() -> int:
@@ -110,7 +92,6 @@ def main() -> int:
     ap.add_argument("--tree-a", required=True, type=Path, help="First Outputs tree")
     ap.add_argument("--tree-b", required=True, type=Path, help="Second Outputs tree")
     ap.add_argument("--source-root", required=True, type=Path, help="Lit test_source_root (e.g. <repo>/tests)")
-    ap.add_argument("--failures-dir", required=True, type=Path, help="Where to copy mismatched output dirs")
     args = ap.parse_args()
 
     totals = {"pass": 0, "fail": 0, "skip": 0}
@@ -120,7 +101,6 @@ def main() -> int:
             tree_a=args.tree_a,
             tree_b=args.tree_b,
             source_root=args.source_root,
-            failures_dir=args.failures_dir,
         )
         totals[status] += 1
         rel = test_file

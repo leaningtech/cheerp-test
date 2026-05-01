@@ -22,8 +22,8 @@ python3 run_lit_tests.py tests/jsexport
 # Run a single test
 python3 run_lit_tests.py tests/memory/kinds.cpp
 
-# Debug a failing test (keeps logs, separate output tree)
-python3 run_lit_tests.py --keep --prefix debug tests/memory/kinds.cpp
+# Debug a failing test (separate output tree to diff against the main run)
+python3 run_lit_tests.py --prefix debug tests/memory/kinds.cpp
 ```
 
 ## Recommended way to run tests
@@ -34,7 +34,8 @@ This is the **preferred and safer** interface because it:
 - translates high-level options into the correct lit parameters,
 - runs one lit invocation per `(target, mode)` combination,
 - handles preexecute and determinism flows,
-- generates merged test reports (`litTestReport.test`).
+- prints a cumulative summary across combos and writes a per-combo xunit
+  report at `Outputs[-<prefix>]/<target>-<mode>/litTestReport.xml`.
 
 From the repository root:
 
@@ -105,7 +106,7 @@ There is one lit invocation per `(target, mode)` combination — preexec is just
 
 #### Determinism testing
 
-Determinism checks verify that the compiler produces identical output when it compiles the same test twice. They work by re-running lit a second time over a sampled subset of tests with `COMPILE_ONLY=1` into `Outputs-det/`, then byte-diffing those artifacts against the ones from the regular run in `Outputs/`. Mismatches are copied to `determinism_failures_compile_only/` for inspection.
+Determinism checks verify that the compiler produces identical output when it compiles the same test twice. They work by re-running lit a second time over a sampled subset of tests with `COMPILE_ONLY=1` into `Outputs-det/`, then byte-diffing those artifacts against the ones from the regular run in `Outputs/`. Mismatches are reported with the differing file list; the two trees stay in `Outputs/` and `Outputs-det/` for `diff -r` inspection.
 
 The check is repeated per `(target, mode)` combination so that a determinism issue surfaces as a `(target, mode, file)` triple. Sampling uses a seeded RNG; if `--determinism-seed` isn't passed, a seed is auto-generated and printed so you can reproduce a given run's sample.
 
@@ -150,20 +151,8 @@ python3 run_lit_tests.py --valgrind
 #### Debugging and diagnostics
 
 ```bash
-# Keep log files for failed tests
-python3 run_lit_tests.py --keep
-
 # Save outputs into Outputs-mybuild/ instead of Outputs/
 python3 run_lit_tests.py --prefix mybuild
-
-# Print commands as they're executed
-python3 run_lit_tests.py --print-cmd
-
-# Print test statistics summary
-python3 run_lit_tests.py --print-stats
-
-# Show per-test timing information
-python3 run_lit_tests.py --time
 
 # Dump LLVM IR after each pass
 python3 run_lit_tests.py --ir tests/memory
@@ -214,17 +203,18 @@ lit --param TARGET=js --param MODE=regular \
 
 ## Reports and outputs
 
-`run_lit_tests.py` writes one xunit report per `(target, mode)` combination:
-`litTestReport_<target>_<mode>.xml`. They're merged into `litTestReport.test`
-at the end and (unless `--keep` is set) the per-combo XMLs are deleted.
+`run_lit_tests.py` writes one xunit report per `(target, mode)` combination at
+`Outputs[-<prefix>]/<target>-<mode>/litTestReport.xml`. After the run, a
+cumulative summary is printed when more than one combo ran.
 
-Test artifacts are placed under
+Test artifacts (and their xunit report) are placed under
 
 ```
 Outputs[-<prefix>]/<target>-<mode>/<relpath>/Output/<testname>.tmp.*
+Outputs[-<prefix>]/<target>-<mode>/litTestReport.xml
 ```
 
-so that runs across `(target, mode)` don't collide and `--keep` preserves them all. With `--prefix mybuild` the root becomes `Outputs-mybuild/` instead of `Outputs/`. Determinism passes write into `Outputs[-<prefix>]-det/...`.
+so that runs across `(target, mode)` don't collide and `rm -rf Outputs/` cleans both. With `--prefix mybuild` the root becomes `Outputs-mybuild/` instead of `Outputs/`. Determinism passes write into `Outputs[-<prefix>]-det/...`.
 
 For example, an `--all` run produces:
 
@@ -361,14 +351,6 @@ For example, artifacts for `tests/memory/kinds.cpp` in `(js, regular)`:
 ls Outputs/js-regular/memory/Output/kinds.cpp.tmp*
 ```
 
-### Keeping logs for debugging
-
-By default, logs are cleaned up. Use `--keep` to preserve them:
-
-```bash
-python3 run_lit_tests.py --keep tests/memory/kinds.cpp
-```
-
 ### Writing outputs into a separate tree
 
 Use `--prefix` to write into `Outputs-<prefix>/` so multiple runs can coexist for diffing:
@@ -381,10 +363,6 @@ ls Outputs-debug/wasm-regular/memory/Output/kinds.cpp.tmp*
 ### Verbose lit output
 
 ```bash
-# With run_lit_tests.py
-python3 run_lit_tests.py --print-cmd tests/memory/kinds.cpp
-
-# With direct lit
 lit -a --param TARGET=wasm --param MODE=regular tests/memory/kinds.cpp
 ```
 
@@ -433,11 +411,7 @@ Options:
                         and printed if omitted)
 
   Debugging:
-  --keep                Don't delete log files for individual tests
   --prefix PREFIX       Write outputs to Outputs-<PREFIX>/ instead of Outputs/
-  --print-cmd           Print commands as they're executed
-  --print-stats         Print a summary of test result numbers
-  --time                Print compilation and run time for each test
   --ir                  Dump the LLVM IR after each pass
 ```
 

@@ -16,7 +16,6 @@ usage = "usage: %prog [options] [test_paths...]"
 parser = OptionParser(usage=usage)
 parser.add_option("-O", dest="optlevel", help="Optimization level (default -O1)", action="store", type="int", default=1)
 parser.add_option("-j", dest="jobs", help="Number of jobs (default 1)", action="store", type="int", default=1)
-parser.add_option("--keep", dest="keep_logs", help="Don't delete log files for individual tests", action="store_true", default=False)
 parser.add_option("--prefix", dest="prefix", help="Write outputs into Outputs-<prefix>/ instead of Outputs/", action="store")
 parser.add_option("--asmjs", dest="asmjs", help="Run the asmjs target", action="store_true", default=False)
 parser.add_option("--genericjs", dest="genericjs", help="Run the generic js target", action="store_true", default=False)
@@ -32,11 +31,8 @@ parser.add_option("--determinism-seed", dest="determinism_seed", help="Seed stri
 parser.add_option("--all", dest="all", help="Run all targets in regular mode plus preexec mode (skipping wasm preexec)", action="store_true", default=False)
 parser.add_option("--pretty-code", dest="pretty_code", help="Compile with -cheerp-pretty-code", action="store_true", default=False)
 parser.add_option("--no-lto", dest="no_lto", help="Compile with -cheerp-no-lto", action="store_true", default=False)
-parser.add_option("--print-cmd", dest="print_cmd", help="Print the commands as they're executed", action="store_true", default=False)
 parser.add_option("--asan", dest="test_asan", help="Test using AddressSanitizer (only asmjs/wasm)", action="store_true", default=False)
 parser.add_option("--himem", dest="himem", help="Run tests with heap start at 2GB", action="store_true", default=False)
-parser.add_option("--print-stats", dest="print_stats", help="Print a summary of test result numbers", action="store_true", default=False)
-parser.add_option("--time", dest="time_tests", help="Print compilation time and run time for each test", action="store_true", default=False)
 parser.add_option("--compiler", dest="compiler", help="Path to clang++ (default /opt/cheerp/bin/clang++)", action="store")
 parser.add_option("--ir", dest="emit_ir", help="Dump the LLVM IR after each pass", action="store_true", default=False)
 (option, args) = parser.parse_args()
@@ -54,11 +50,9 @@ def _format_duration(seconds: float) -> str:
     return f"{m:d}:{s:02d}.{ms:03d}s"
 
 
-def _run_timed(label, *, command=None, argv=None, shell=False, print_cmd=False, **kwargs):
+def _run_timed(label, *, command=None, argv=None, shell=False, **kwargs):
     if (command is None) == (argv is None):
         raise ValueError("Provide exactly one of command= or argv=")
-    if print_cmd:
-        print(f"Command: {command if command is not None else ' '.join(argv)}")
     t0 = time.perf_counter()
     if command is not None:
         result = subprocess.run(command, shell=shell, **kwargs)
@@ -67,34 +61,23 @@ def _run_timed(label, *, command=None, argv=None, shell=False, print_cmd=False, 
     return result, (time.perf_counter() - t0)
 
 
-def _collect_testcase_stats(xml_reports):
+def _xml_stats(xml_file):
     stats = {'total': 0, 'passed': 0, 'failed': 0, 'errored': 0, 'skipped': 0}
-    per_test_times = []
-    for xml_file in xml_reports:
-        try:
-            tree = ET.parse(xml_file)
-            root = tree.getroot()
-        except Exception:
-            continue
-        for testcase in root.findall('.//testcase'):
-            stats['total'] += 1
-            classname = testcase.get('classname', '')
-            name = testcase.get('name', '')
-            full_name = f"{classname}::{name}" if classname else name
-            try:
-                t = float(testcase.get('time', '0') or 0)
-            except ValueError:
-                t = 0.0
-            per_test_times.append((full_name, t))
-            if testcase.find('failure') is not None:
-                stats['failed'] += 1
-            elif testcase.find('error') is not None:
-                stats['errored'] += 1
-            elif testcase.find('skipped') is not None:
-                stats['skipped'] += 1
-            else:
-                stats['passed'] += 1
-    return stats, per_test_times
+    try:
+        root = ET.parse(xml_file).getroot()
+    except Exception:
+        return stats
+    for tc in root.findall('.//testcase'):
+        stats['total'] += 1
+        if tc.find('failure') is not None:
+            stats['failed'] += 1
+        elif tc.find('error') is not None:
+            stats['errored'] += 1
+        elif tc.find('skipped') is not None:
+            stats['skipped'] += 1
+        else:
+            stats['passed'] += 1
+    return stats
 
 
 def _discover_and_sample(test_paths, probability, exclude_dirs, seed):
@@ -185,14 +168,8 @@ if __name__ == "__main__":
         print(f"Cheerp flags: {cheerp_flags}")
     if option.compiler:
         print(f"Compiler: {option.compiler}")
-    if option.keep_logs:
-        print("Keep logs: enabled")
     if option.prefix:
         print(f"Output prefix: {option.prefix}")
-    if option.print_stats:
-        print("Print stats: enabled")
-    if option.time_tests:
-        print("Per-test timing report: enabled")
     if option.emit_ir:
         print("IR dumping: enabled")
     print("=" * 30 + "\n")
@@ -250,22 +227,24 @@ if __name__ == "__main__":
         if xunit_xml:
             opts.append(f"--xunit-xml-output={xunit_xml}")
         cmd = f"lit {' '.join(opts)} {' '.join(params)} {test_args}"
-        result, elapsed = _run_timed(label, command=cmd, shell=True, print_cmd=option.print_cmd)
+        result, elapsed = _run_timed(label, command=cmd, shell=True)
         timings.append({"label": label, "seconds": elapsed})
         print(f"[timing] {label}: {_format_duration(elapsed)}")
         return result.returncode
 
     test_args = " ".join(shlex.quote(p) for p in test_paths)
-    xml_reports = []
+    combo_reports = []  # list of (target, mode, xunit_xml_path)
 
     if not option.determinism_only:
         for target, mode in combos:
-            xunit = f"litTestReport_{target}_{mode}.xml"
+            combo_dir = os.path.join(_outputs_root(base_prefix), f"{target}-{mode}")
+            os.makedirs(combo_dir, exist_ok=True)
+            xunit = os.path.join(combo_dir, "litTestReport.xml")
             label = f"lit ({target}, {mode})"
             rc = _run_lit(target, mode, base_prefix, test_args, xunit, label)
             if rc != 0:
                 exit_code = rc
-            xml_reports.append(xunit)
+            combo_reports.append((target, mode, xunit))
 
     if option.determinism or option.determinism_only:
         print("\n" + "=" * 60)
@@ -320,81 +299,36 @@ if __name__ == "__main__":
                     "--tree-a", tree_a,
                     "--tree-b", tree_b,
                     "--source-root", tests_source_root,
-                    "--failures-dir", os.path.join(repo_root_abs, "determinism_failures_compile_only"),
                     *[str(p) for p in sampled],
                 ]
                 result, elapsed = _run_timed(
                     f"determinism compare ({target}, {mode})",
-                    argv=compare_cmd, shell=False, print_cmd=option.print_cmd,
+                    argv=compare_cmd, shell=False,
                 )
                 timings.append({"label": f"determinism compare ({target}, {mode})", "seconds": elapsed})
                 print(f"[timing] determinism compare ({target}, {mode}): {_format_duration(elapsed)}")
                 if result.returncode != 0:
                     exit_code = result.returncode
 
-    # Merge xunit reports.
-    xml_reports = [r for r in xml_reports if os.path.exists(r)]
-    report_t0 = time.perf_counter()
-    if xml_reports:
-        try:
-            with open('litTestReport.test', 'w') as f:
-                f.write('<testsuite>\n')
-                for xml_file in xml_reports:
-                    try:
-                        tree = ET.parse(xml_file)
-                        root = tree.getroot()
-                        for testsuite in root.findall('.//testsuite'):
-                            for testcase in testsuite.findall('testcase'):
-                                classname = testcase.get('classname', '')
-                                name = testcase.get('name', '')
-                                case_time = testcase.get('time', '0')
-                                failure = testcase.find('failure')
-                                if failure is not None:
-                                    f.write(f'<testcase classname="{classname}" name="{name}" time="{case_time}">\n')
-                                    f.write(f'  <failure type="{failure.get("type", "failure")}">')
-                                    f.write(failure.text if failure.text else '')
-                                    f.write('</failure>\n')
-                                    f.write('</testcase>\n')
-                                else:
-                                    f.write(f'<testcase classname="{classname}" name="{name}" time="{case_time}"/>\n')
-                    except Exception as e:
-                        print(f"Warning: Failed to parse {xml_file}: {e}")
-                f.write('</testsuite>\n')
-            print(f"Test report generated: litTestReport.test (merged {len(xml_reports)} reports)")
-        except Exception as e:
-            print(f"Warning: Failed to convert test reports: {e}")
-            with open('litTestReport.test', 'w') as f:
-                f.write('<testsuite>\n</testsuite>\n')
-    else:
-        print("Warning: No test reports generated, creating empty report")
-        with open('litTestReport.test', 'w') as f:
-            f.write('<testsuite>\n</testsuite>\n')
-
-    testcase_stats, per_test_times = _collect_testcase_stats(xml_reports)
-
-    if not option.keep_logs:
-        for xml_file in xml_reports:
-            try:
-                os.remove(xml_file)
-            except OSError:
-                pass
-
-    timings.append({"label": "report conversion", "seconds": time.perf_counter() - report_t0})
-
-    if option.print_stats:
-        print("\nTest stats")
-        print("-" * 30)
-        print(f"passed: {testcase_stats['passed']}")
-        print(f"failed: {testcase_stats['failed']}")
-        print(f"errored: {testcase_stats['errored']}")
-        print(f"skipped/unsupported: {testcase_stats['skipped']}")
-        print(f"total: {testcase_stats['total']}")
-
-    if option.time_tests and per_test_times:
-        print("\nPer-test durations")
-        print("-" * 30)
-        for test_name, sec in sorted(per_test_times, key=lambda x: x[1], reverse=True):
-            print(f"{sec:8.3f}s  {test_name}")
+    # Cumulative summary across (target, mode) combos.
+    combo_reports = [(t, m, x) for (t, m, x) in combo_reports if os.path.exists(x)]
+    if len(combo_reports) > 1:
+        per_combo = [(t, m, _xml_stats(x)) for (t, m, x) in combo_reports]
+        label_w = max(len(f"{t} {m}") for (t, m, _) in per_combo)
+        cols = ('passed', 'failed', 'errored', 'skipped', 'total')
+        widths = {c: max(len(c), max(len(str(s[c])) for (_, _, s) in per_combo)) for c in cols}
+        print("\n" + "=" * 60)
+        print("Cumulative summary")
+        print("=" * 60)
+        header = " " * label_w + "  " + "  ".join(c.rjust(widths[c]) for c in cols)
+        print(header)
+        for t, m, s in per_combo:
+            row = f"{t} {m}".ljust(label_w) + "  " + "  ".join(str(s[c]).rjust(widths[c]) for c in cols)
+            print(row)
+        totals = {c: sum(s[c] for (_, _, s) in per_combo) for c in cols}
+        widths = {c: max(widths[c], len(str(totals[c]))) for c in cols}
+        print("-" * len(header))
+        print("TOTAL".ljust(label_w) + "  " + "  ".join(str(totals[c]).rjust(widths[c]) for c in cols))
 
     overall_elapsed = time.perf_counter() - overall_t0
     test_elapsed = sum(t["seconds"] for t in timings if t["label"].startswith("lit") or t["label"].startswith("determinism"))
