@@ -8,7 +8,7 @@ This repository contains the Cheerp lit-based test suite for validating the Chee
 - `lit` (`pip install lit`)
 - Node.js
 - `FileCheck` available in PATH (or at the path configured by `lit.cfg`)
-- A working Cheerp toolchain install (default `/opt/cheerp`, or override with `COMPILER`/`CHEERP_PREFIX`)
+- A working Cheerp `clang++` (default `/opt/cheerp/bin/clang++`, override with `--compiler`/`COMPILER`)
 
 ## Quick Start
 
@@ -79,9 +79,7 @@ python3 run_lit_tests.py --wasm --asmjs
 
 ```bash
 # Use a non-default compiler installation
-python3 run_lit_tests.py \
-  --compiler /opt/cheerp2/bin/clang++ \
-  --cheerp-prefix /opt/cheerp2
+python3 run_lit_tests.py --compiler /opt/cheerp2/bin/clang++
 
 # Parallel jobs and optimization level
 python3 run_lit_tests.py -j8 -O2
@@ -195,7 +193,6 @@ lit --param TARGET=asmjs --param MODE=preexec tests
 lit \
   --param TARGET=wasm --param MODE=regular \
   --param COMPILER=/opt/cheerp2/bin/clang++ \
-  --param CHEERP_PREFIX=/opt/cheerp2 \
   tests
 
 # Extra compile options
@@ -211,15 +208,8 @@ lit --param TARGET=js --param MODE=regular \
 | `MODE` | Compile mode (required) | `regular`, `preexec` |
 | `OPT_LEVEL` | Optimization level | `O0`, `O1`, `O2`, `O3` |
 | `CHEERP_FLAGS` | Additional compiler flags | `-cheerp-pretty-code` |
-| `EXTRA_FLAGS` | Extra flags appended to compile commands | Any compiler flags |
-| `COMPILER` | Compiler alias/path | `cheerp`, `local`, or explicit path |
-| `CHEERP_PREFIX` | Toolchain prefix | `/opt/cheerp`, `/opt/altcompiler` |
-| `KEEP_LOGS` | Keep individual test logs | `0`, `1` |
+| `COMPILER` | Path to clang++ (default `/opt/cheerp/bin/clang++`) | `/opt/cheerp2/bin/clang++` |
 | `OUTPUT_PREFIX` | Prefix for the output tree | Any string |
-| `PRINT_STATS` | Print test statistics | `0`, `1` |
-| `TIME_TESTS` | Per-test timing | `0`, `1` |
-| `HIMEM` | High memory mode | `0`, `1` |
-| `IR` | Dump LLVM IR | `0`, `1` |
 | `COMPILE_ONLY` | Skip node/FileCheck (used by determinism pass) | `0`, `1` |
 
 ## Reports and outputs
@@ -279,7 +269,6 @@ That one line works in all five `(target, mode)` combinations:
 | `%target` | Literal target name: `js`, `wasm`, or `asmjs`. Useful for embedding the target into a per-target FileCheck prefix. |
 | `%FileCheck` | Path to FileCheck |
 | `%node` | Node.js executable |
-| `%valgrind` | Valgrind command (if enabled) |
 | `%helpers` | Path to repo `helpers/` directory |
 | `%s` | Source file path |
 | `%t` | Per-test unique base path; `%t.js`, `%t.log`, `%t-<suffix>.js` are siblings |
@@ -300,8 +289,7 @@ Use `// REQUIRES:` to restrict a test to specific features:
 - Mode: `regular` or `preexecution`
 - Linear-memory subset: `linear-memory` (= wasm or asmjs)
 - Packed-tests subset: `packed_tests` (= wasm or js)
-- Sanitizers: `asan` / `no-asan`
-- Tools: `valgrind` / `no-valgrind`
+- Sanitizers: `no-asan` (set when ASAN is not in effect)
 
 ### Per-target divergence
 
@@ -420,9 +408,7 @@ Options:
                         (wasm preexec is always skipped)
 
   Compiler configuration:
-  --compiler PATH       Compiler alias/path (e.g. cheerp, local,
-                        /opt/cheerp2/bin/clang++)
-  --cheerp-prefix PATH  Cheerp install prefix (e.g. /opt/cheerp)
+  --compiler PATH       Path to clang++ (default /opt/cheerp/bin/clang++)
 
   Compiler flags:
   --pretty-code         Compile with -cheerp-pretty-code

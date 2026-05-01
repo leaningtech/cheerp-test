@@ -37,8 +37,7 @@ parser.add_option("--asan", dest="test_asan", help="Test using AddressSanitizer 
 parser.add_option("--himem", dest="himem", help="Run tests with heap start at 2GB", action="store_true", default=False)
 parser.add_option("--print-stats", dest="print_stats", help="Print a summary of test result numbers", action="store_true", default=False)
 parser.add_option("--time", dest="time_tests", help="Print compilation time and run time for each test", action="store_true", default=False)
-parser.add_option("--compiler", dest="compiler", help="Compiler alias/path to pass to lit (e.g. cheerp, local, /opt/cheerp2/bin/clang++)", action="store")
-parser.add_option("--cheerp-prefix", dest="cheerp_prefix", help="Cheerp install prefix to pass to lit via CHEERP_PREFIX", action="store")
+parser.add_option("--compiler", dest="compiler", help="Path to clang++ (default /opt/cheerp/bin/clang++)", action="store")
 parser.add_option("--ir", dest="emit_ir", help="Dump the LLVM IR after each pass", action="store_true", default=False)
 (option, args) = parser.parse_args()
 
@@ -150,18 +149,6 @@ if __name__ == "__main__":
     user_lit_params = []
     if option.compiler:
         user_lit_params.append(f"--param COMPILER={shlex.quote(option.compiler)}")
-    if option.cheerp_prefix:
-        user_lit_params.append(f"--param CHEERP_PREFIX={shlex.quote(option.cheerp_prefix)}")
-    if option.keep_logs:
-        user_lit_params.append("--param KEEP_LOGS=1")
-    if option.print_stats:
-        user_lit_params.append("--param PRINT_STATS=1")
-    if option.time_tests:
-        user_lit_params.append("--param TIME_TESTS=1")
-    if option.himem:
-        user_lit_params.append("--param HIMEM=1")
-    if option.emit_ir:
-        user_lit_params.append("--param IR=1")
 
     if option.valgrind:
         cheerp_flags.append("-valgrind")
@@ -176,6 +163,9 @@ if __name__ == "__main__":
         cheerp_flags.append("-cheerp-linear-heap-size=2112")
     if option.typescript:
         cheerp_flags.append("-cheerp-make-dts")
+    if option.emit_ir:
+        cheerp_flags.append("-mllvm")
+        cheerp_flags.append("-print-after-all")
 
     combos = _select_combos(option)
     if option.test_asan:
@@ -194,9 +184,7 @@ if __name__ == "__main__":
     if cheerp_flags:
         print(f"Cheerp flags: {cheerp_flags}")
     if option.compiler:
-        print(f"Compiler parameter: {option.compiler}")
-    if option.cheerp_prefix:
-        print(f"Cheerp prefix parameter: {option.cheerp_prefix}")
+        print(f"Compiler: {option.compiler}")
     if option.keep_logs:
         print("Keep logs: enabled")
     if option.prefix:
